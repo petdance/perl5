@@ -750,8 +750,9 @@ debug "Scanning for locales...\n";
 
 require POSIX; import POSIX ':locale_h';
 
-my @Locale = find_locales([ 'LC_CTYPE', 'LC_NUMERIC', 'LC_ALL' ]);
-my @include_incompatible_locales = find_locales('LC_CTYPE',
+my $categories = [ 'LC_CTYPE', 'LC_NUMERIC', 'LC_ALL' ];
+my @Locale = find_locales($categories);
+my @include_incompatible_locales = find_locales($categories,
                                                 'even incompatible locales');
 
 # The locales included in the incompatible list that aren't in the compatible
@@ -778,11 +779,15 @@ if (@Locale < @include_incompatible_locales) {
             push @warnings, ($warning =~ s/\n/\n# /sgr);
         };
 
-        setlocale(&POSIX::LC_CTYPE, $bad_locale);
+        my $ret = setlocale(&POSIX::LC_CTYPE, $bad_locale);
 
         my $message = "testing of locale '$bad_locale' is skipped";
         if (@warnings) {
             skip $message . ":\n# " . join "\n# ", @warnings;
+        }
+        elsif (! $ret) {
+            skip("$message:\n#"
+               . " setlocale(&POSIX::LC_CTYPE, '$bad_locale') failed");
         }
         else {
             fail $message . ", because it is was found to be incompatible with"
@@ -1801,10 +1806,16 @@ foreach my $Locale (@Locale) {
 
         ++$locales_test_number;
         $test_names{$locales_test_number}
-                            = 'Verify that \0 sorts before any other control';
-        my $ok = $sorted_controls[0] eq "\0";
-        report_result($Locale, $locales_test_number, $ok);
-        shift @sorted_controls;
+                = 'Skip in locales where \0 is not considered a control;'
+                . ' otherwise verify that \0 sorts before any other control';
+        if ("\0" !~ /[[:cntrl:]]/) {
+            report_result($Locale, $locales_test_number, 1);
+        }
+        else {
+            my $ok = $sorted_controls[0] eq "\0";
+            report_result($Locale, $locales_test_number, $ok);
+            shift @sorted_controls;
+        }
         my $lowest_control = $sorted_controls[0];
 
         ++$locales_test_number;
@@ -1822,7 +1833,7 @@ foreach my $Locale (@Locale) {
         ++$locales_test_number;
         $test_names{$locales_test_number}
                             = 'Verify that strings with embedded NUL collate';
-        $ok = "a\0a\0a" lt "a${lowest_control}a${lowest_control}a";
+        my $ok = "a\0a\0a" lt "a${lowest_control}a${lowest_control}a";
         report_result($Locale, $locales_test_number, $ok);
 
         ++$locales_test_number;
