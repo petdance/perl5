@@ -188,7 +188,7 @@ use File::Glob qw(:case);
     },
 
     'bignum' => {
-        'DISTRIBUTION' => 'PJACKLAM/bignum-0.43.tar.gz',
+        'DISTRIBUTION' => 'PJACKLAM/bignum-0.44.tar.gz',
         'FILES'        => q[cpan/bignum],
         'EXCLUDED'     => [
             qr{^inc/Module/},
@@ -198,13 +198,6 @@ use File::Glob qw(:case);
                 t/02pod.t
                 t/03podcov.t
                 ),
-        ],
-        'CUSTOMIZED'   => [
-            qw(
-               lib/Math/BigFloat/Trace.pm
-               lib/Math/BigInt/Trace.pm lib/bigint.pm
-               lib/bignum.pm lib/bigrat.pm
-            )
         ],
     },
 
@@ -769,7 +762,7 @@ use File::Glob qw(:case);
     },
 
     'Math::BigInt' => {
-        'DISTRIBUTION' => 'PJACKLAM/Math-BigInt-1.999727.tar.gz',
+        'DISTRIBUTION' => 'PJACKLAM/Math-BigInt-1.999802.tar.gz',
         'FILES'        => q[cpan/Math-BigInt],
         'EXCLUDED'     => [
             qr{^inc/},
@@ -784,10 +777,12 @@ use File::Glob qw(:case);
     },
 
     'Math::BigInt::FastCalc' => {
-        'DISTRIBUTION' => 'PJACKLAM/Math-BigInt-FastCalc-0.42.tar.gz',
+        'DISTRIBUTION' => 'PJACKLAM/Math-BigInt-FastCalc-0.5002.tar.gz',
         'FILES'        => q[cpan/Math-BigInt-FastCalc],
         'EXCLUDED'     => [
             qr{^inc/},
+            qr{^t/author-},
+            qr{^t/Math/BigInt/Lib/TestUtil.pm},
             qw( t/00sig.t
                 t/01load.t
                 t/02pod.t
@@ -807,7 +802,7 @@ use File::Glob qw(:case);
     },
 
     'Math::BigRat' => {
-        'DISTRIBUTION' => 'PJACKLAM/Math-BigRat-0.260804.tar.gz',
+        'DISTRIBUTION' => 'PJACKLAM/Math-BigRat-0.260805.tar.gz',
         'FILES'        => q[cpan/Math-BigRat],
         'EXCLUDED'     => [
             qr{^inc/},
@@ -1175,7 +1170,7 @@ use File::Glob qw(:case);
     },
 
     'Test::Simple' => {
-        'DISTRIBUTION' => 'EXODIST/Test-Simple-1.302062.tar.gz',
+        'DISTRIBUTION' => 'EXODIST/Test-Simple-1.302067.tar.gz',
         'FILES'        => q[cpan/Test-Simple],
         'EXCLUDED'     => [
             qr{^examples/},
@@ -1288,12 +1283,12 @@ use File::Glob qw(:case);
     },
 
     'Time::HiRes' => {
-        'DISTRIBUTION' => 'JHI/Time-HiRes-1.9740.tar.gz',
+        'DISTRIBUTION' => 'JHI/Time-HiRes-1.9741.tar.gz',
         'FILES'        => q[dist/Time-HiRes],
     },
 
     'Time::Local' => {
-        'DISTRIBUTION' => 'DROLSKY/Time-Local-1.24.tar.gz',
+        'DISTRIBUTION' => 'DROLSKY/Time-Local-1.25.tar.gz',
         'FILES'        => q[cpan/Time-Local],
         'EXCLUDED'     => [
             qr{^xt/},
@@ -1312,7 +1307,7 @@ use File::Glob qw(:case);
     },
 
     'Unicode::Collate' => {
-        'DISTRIBUTION' => 'SADAHIRO/Unicode-Collate-1.18.tar.gz',
+        'DISTRIBUTION' => 'SADAHIRO/Unicode-Collate-1.19.tar.gz',
         'FILES'        => q[cpan/Unicode-Collate],
         'EXCLUDED'     => [
             qr{N$},

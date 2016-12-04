@@ -1684,6 +1684,7 @@ cpan/Math-BigInt/lib/Math/BigFloat.pm		An arbitrary precision floating-point ari
 cpan/Math-BigInt/lib/Math/BigInt.pm	An arbitrary precision integer arithmetic package
 cpan/Math-BigInt/lib/Math/BigInt/Calc.pm	Pure Perl module to support Math::BigInt
 cpan/Math-BigInt/lib/Math/BigInt/CalcEmu.pm	Pure Perl module to support Math::BigInt
+cpan/Math-BigInt/lib/Math/BigInt/Lib.pm
 cpan/Math-BigInt/t/_e_math.t		Helper routine in BigFloat for _e math
 cpan/Math-BigInt/t/alias.inc		Support for BigInt tests
 cpan/Math-BigInt/t/bare_mbf.t		Test MBF under Math::BigInt::BareCalc
@@ -1725,6 +1726,7 @@ cpan/Math-BigInt/t/isa.t		Test for Math::BigInt inheritance
 cpan/Math-BigInt/t/lib_load.t		Test sane lib names
 cpan/Math-BigInt/t/Math/BigFloat/Subclass.pm	Empty subclass of BigFloat for test
 cpan/Math-BigInt/t/Math/BigInt/BareCalc.pm	Bigint's simulation of Calc
+cpan/Math-BigInt/t/Math/BigInt/Lib/Minimal.pm
 cpan/Math-BigInt/t/Math/BigInt/Lib/TestUtil.pm	Test Math::BigInt
 cpan/Math-BigInt/t/Math/BigInt/Scalar.pm	Pure Perl module to support Math::BigInt
 cpan/Math-BigInt/t/Math/BigInt/Subclass.pm	Empty subclass of BigInt for test
@@ -1770,6 +1772,8 @@ cpan/Math-BigInt/t/with_sub.t		Test use Math::BigFloat with => package
 cpan/Math-BigInt-FastCalc/FastCalc.xs	Math::BigInt::FastCalc extension
 cpan/Math-BigInt-FastCalc/lib/Math/BigInt/FastCalc.pm	Math::BigInt::FastCalc extension
 cpan/Math-BigInt-FastCalc/t/bigintfc.t	Math::BigInt::FastCalc extension
+cpan/Math-BigInt-FastCalc/t/biglog.t
+cpan/Math-BigInt-FastCalc/t/bigroot.t
 cpan/Math-BigInt-FastCalc/t/bootstrap.t	Math::BigInt::FastCalc extension
 cpan/Math-BigInt-FastCalc/t/leak.t	test for memory leaks in Math::BigInt::FastCalc
 cpan/Math-BigInt-FastCalc/t/mbi_rand.t	Math::BigInt::FastCalc extension
@@ -2704,6 +2708,8 @@ cpan/Test-Simple/t/Legacy/plan_shouldnt_import.t
 cpan/Test-Simple/t/Legacy/plan_skip_all.t
 cpan/Test-Simple/t/Legacy/Regression/637.t
 cpan/Test-Simple/t/Legacy/Regression/683_thread_todo.t
+cpan/Test-Simple/t/Legacy/Regression/6_cmp_ok.t
+cpan/Test-Simple/t/Legacy/Regression/736_use_ok.t
 cpan/Test-Simple/t/Legacy/require_ok.t
 cpan/Test-Simple/t/Legacy/run_test.t
 cpan/Test-Simple/t/Legacy/simple.t
@@ -2748,6 +2754,7 @@ cpan/Test-Simple/t/Legacy/useing.t
 cpan/Test-Simple/t/Legacy/utf8.t
 cpan/Test-Simple/t/Legacy/versions.t
 cpan/Test-Simple/t/Legacy_And_Test2/builder_loaded_late.t
+cpan/Test-Simple/t/Legacy_And_Test2/hidden_warnings.t
 cpan/Test-Simple/t/lib/Dev/Null.pm
 cpan/Test-Simple/t/lib/Dummy.pm
 cpan/Test-Simple/t/lib/MyOverload.pm
@@ -2923,6 +2930,7 @@ cpan/Unicode-Collate/Collate/Locale/fr_ca.pl			Unicode::Collate
 cpan/Unicode-Collate/Collate/Locale/gu.pl	Unicode::Collate
 cpan/Unicode-Collate/Collate/Locale/ha.pl			Unicode::Collate
 cpan/Unicode-Collate/Collate/Locale/haw.pl			Unicode::Collate
+cpan/Unicode-Collate/Collate/Locale/he.pl
 cpan/Unicode-Collate/Collate/Locale/hi.pl	Unicode::Collate
 cpan/Unicode-Collate/Collate/Locale/hr.pl			Unicode::Collate
 cpan/Unicode-Collate/Collate/Locale/hu.pl			Unicode::Collate
@@ -2970,6 +2978,7 @@ cpan/Unicode-Collate/Collate/Locale/ug_cyrl.pl			Unicode::Collate
 cpan/Unicode-Collate/Collate/Locale/uk.pl			Unicode::Collate
 cpan/Unicode-Collate/Collate/Locale/ur.pl	Unicode::Collate
 cpan/Unicode-Collate/Collate/Locale/vi.pl			Unicode::Collate
+cpan/Unicode-Collate/Collate/Locale/vo.pl
 cpan/Unicode-Collate/Collate/Locale/wae.pl	Unicode::Collate
 cpan/Unicode-Collate/Collate/Locale/wo.pl			Unicode::Collate
 cpan/Unicode-Collate/Collate/Locale/yo.pl			Unicode::Collate
@@ -3036,6 +3045,7 @@ cpan/Unicode-Collate/t/loc_frca.t		Unicode::Collate
 cpan/Unicode-Collate/t/loc_gu.t	Unicode::Collate
 cpan/Unicode-Collate/t/loc_ha.t			Unicode::Collate
 cpan/Unicode-Collate/t/loc_haw.t			Unicode::Collate
+cpan/Unicode-Collate/t/loc_he.t
 cpan/Unicode-Collate/t/loc_hi.t	Unicode::Collate
 cpan/Unicode-Collate/t/loc_hr.t			Unicode::Collate
 cpan/Unicode-Collate/t/loc_hu.t			Unicode::Collate
@@ -3090,6 +3100,7 @@ cpan/Unicode-Collate/t/loc_ugcy.t		Unicode::Collate
 cpan/Unicode-Collate/t/loc_uk.t			Unicode::Collate
 cpan/Unicode-Collate/t/loc_ur.t	Unicode::Collate
 cpan/Unicode-Collate/t/loc_vi.t			Unicode::Collate
+cpan/Unicode-Collate/t/loc_vo.t
 cpan/Unicode-Collate/t/loc_wae.t	Unicode::Collate
 cpan/Unicode-Collate/t/loc_wo.t			Unicode::Collate
 cpan/Unicode-Collate/t/loc_yo.t			Unicode::Collate
