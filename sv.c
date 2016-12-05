@@ -8653,13 +8653,27 @@ Perl_sv_gets(pTHX_ SV *const sv, PerlIO *const fp, I32 append)
 	if (cnt > 0) {
             /* if there is a separator */
 	    if (rslen) {
-                /* loop until we hit the end of the read-ahead buffer */
-		while (cnt > 0) {		     /* this     |  eat */
-                    /* scan forward copying and searching for rslast as we go */
-		    cnt--;
-		    if ((*bp++ = *ptr++) == rslast)  /* really   |  dust */
-			goto thats_all_folks;	     /* screams  |  sed :-) */
-		}
+                /* find next rslast */
+                STDCHAR *p;
+
+                /* shortcut common case of blank line */
+                cnt--;
+                if ((*bp++ = *ptr++) == rslast)
+                    goto thats_all_folks;
+
+                p = (STDCHAR *)memchr(ptr, rslast, cnt);
+                if (p) {
+                    SSize_t got = p - ptr + 1;
+                    Copy(ptr, bp, got, STDCHAR);
+                    ptr += got;
+                    bp  += got;
+                    cnt -= got;
+                    goto thats_all_folks;
+                }
+                Copy(ptr, bp, cnt, STDCHAR);
+                ptr += cnt;
+                bp  += cnt;
+                cnt = 0;
 	    }
 	    else {
                 /* no separator, slurp the full buffer */
@@ -13130,7 +13144,7 @@ Perl_parser_dup(pTHX_ const yy_parser *const proto, CLONE_PARAMS *const param)
     parser->old_parser = NULL;
     parser->stack = NULL;
     parser->ps = NULL;
-    parser->stack_size = 0;
+    parser->stack_maxbase = NULL;
     /* XXX parser->stack->state = 0; */
 
     /* XXX eventually, just Copy() most of the parser struct ? */
