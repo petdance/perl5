@@ -188,10 +188,9 @@ use File::Glob qw(:case);
     },
 
     'bignum' => {
-        'DISTRIBUTION' => 'PJACKLAM/bignum-0.44.tar.gz',
+        'DISTRIBUTION' => 'PJACKLAM/bignum-0.45.tar.gz',
         'FILES'        => q[cpan/bignum],
         'EXCLUDED'     => [
-            qr{^inc/Module/},
             qr{^t/author-},
             qw( t/00sig.t
                 t/01load.t
@@ -726,7 +725,7 @@ use File::Glob qw(:case);
     },
 
     'Locale-Codes' => {
-        'DISTRIBUTION' => 'SBECK/Locale-Codes-3.40.tar.gz',
+        'DISTRIBUTION' => 'SBECK/Locale-Codes-3.42.tar.gz',
         'FILES'        => q[cpan/Locale-Codes],
         'EXCLUDED'     => [
             qw( README.first
@@ -762,10 +761,9 @@ use File::Glob qw(:case);
     },
 
     'Math::BigInt' => {
-        'DISTRIBUTION' => 'PJACKLAM/Math-BigInt-1.999802.tar.gz',
+        'DISTRIBUTION' => 'PJACKLAM/Math-BigInt-1.999803.tar.gz',
         'FILES'        => q[cpan/Math-BigInt],
         'EXCLUDED'     => [
-            qr{^inc/},
             qr{^examples/},
             qr{^t/author-},
             qw( t/00sig.t
@@ -777,10 +775,9 @@ use File::Glob qw(:case);
     },
 
     'Math::BigInt::FastCalc' => {
-        'DISTRIBUTION' => 'PJACKLAM/Math-BigInt-FastCalc-0.5002.tar.gz',
+        'DISTRIBUTION' => 'PJACKLAM/Math-BigInt-FastCalc-0.5003.tar.gz',
         'FILES'        => q[cpan/Math-BigInt-FastCalc],
         'EXCLUDED'     => [
-            qr{^inc/},
             qr{^t/author-},
             qr{^t/Math/BigInt/Lib/TestUtil.pm},
             qw( t/00sig.t
@@ -802,10 +799,9 @@ use File::Glob qw(:case);
     },
 
     'Math::BigRat' => {
-        'DISTRIBUTION' => 'PJACKLAM/Math-BigRat-0.260805.tar.gz',
+        'DISTRIBUTION' => 'PJACKLAM/Math-BigRat-0.2609.tar.gz',
         'FILES'        => q[cpan/Math-BigRat],
         'EXCLUDED'     => [
-            qr{^inc/},
             qr{^t/author-},
             qw( t/00sig.t
                 t/01load.t

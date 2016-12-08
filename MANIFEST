@@ -1730,6 +1730,7 @@ cpan/Math-BigInt/t/from_oct-mbf.t	Test Math::BigInt
 cpan/Math-BigInt/t/inf_nan.t		Special tests for inf and *NaN* handling
 cpan/Math-BigInt/t/isa.t		Test for Math::BigInt inheritance
 cpan/Math-BigInt/t/lib_load.t		Test sane lib names
+cpan/Math-BigInt/t/Math/BigFloat/#Subclass.pm#
 cpan/Math-BigInt/t/Math/BigFloat/Subclass.pm	Empty subclass of BigFloat for test
 cpan/Math-BigInt/t/Math/BigInt/BareCalc.pm	Bigint's simulation of Calc
 cpan/Math-BigInt/t/Math/BigInt/Lib/Minimal.pm
@@ -3450,6 +3451,7 @@ dist/IO/t/io_dir.t		See if directory-related methods from IO work
 dist/IO/t/io_dup.t		See if dup()-related methods from IO work
 dist/IO/t/io_file.t		See if binmode()-related methods on IO::File work
 dist/IO/t/io_file_export.t	Test IO::File exports
+dist/IO/t/io_leak.t		See if IO leaks SVs (only run in core)
 dist/IO/t/io_linenum.t		See if I/O line numbers are tracked correctly
 dist/IO/t/io_multihomed.t	See if INET sockets work with multi-homed hosts
 dist/IO/t/io_pipe.t		See if pipe()-related methods from IO work
