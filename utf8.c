@@ -430,6 +430,12 @@ S_does_utf8_overflow(const U8 * const s, const U8 * e)
     const U8 *x;
     const U8 * y = (const U8 *) HIGHEST_REPRESENTABLE_UTF8;
 
+#if ! defined(UV_IS_QUAD) && ! defined(EBCDIC)
+
+    const STRLEN len = e - s;
+
+#endif
+
     /* Returns a boolean as to if this UTF-8 string would overflow a UV on this
      * platform, that is if it represents a code point larger than the highest
      * representable code point.  (For ASCII platforms, we could use memcmp()
@@ -449,10 +455,10 @@ S_does_utf8_overflow(const U8 * const s, const U8 * e)
     /* On 32 bit ASCII machines, many overlongs that start with FF don't
      * overflow */
 
-    if (isFF_OVERLONG(s, e - s)) {
+    if (isFF_OVERLONG(s, len)) {
         const U8 max_32_bit_overlong[] = "\xFF\x80\x80\x80\x80\x80\x80\x84";
         return memGE(s, max_32_bit_overlong,
-                                MIN(e - s, sizeof(max_32_bit_overlong) - 1));
+                                MIN(len, sizeof(max_32_bit_overlong) - 1));
     }
 
 #endif
@@ -931,7 +937,7 @@ to a C<U32> variable, which this function sets to indicate any errors found.
 Upon return, if C<*errors> is 0, there were no errors found.  Otherwise,
 C<*errors> is the bit-wise C<OR> of the bits described in the list below.  Some
 of these bits will be set if a malformation is found, even if the input
-C<flags> parameter indicates that the given malformation is allowed; the
+C<flags> parameter indicates that the given malformation is allowed; those
 exceptions are noted:
 
 =over 4
