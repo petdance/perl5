@@ -5,15 +5,15 @@
 [ this is a template for a new perldelta file.  Any text flagged as XXX needs
 to be processed before release. ]
 
-perldelta - what is new for perl v5.25.8
+perldelta - what is new for perl v5.25.9
 
 =head1 DESCRIPTION
 
-This document describes differences between the 5.25.7 release and the 5.25.8
+This document describes differences between the 5.25.8 release and the 5.25.9
 release.
 
-If you are upgrading from an earlier release such as 5.25.6, first read
-L<perl5257delta>, which describes differences between 5.25.6 and 5.25.7.
+If you are upgrading from an earlier release such as 5.25.7, first read
+L<perl5258delta>, which describes differences between 5.25.7 and 5.25.8.
 
 =head1 Notice
 
@@ -26,16 +26,6 @@ enhancements.  Particularly prominent performance optimisations could go
 here, but most should go in the L</Performance Enhancements> section.
 
 [ List each enhancement as a =head2 entry ]
-
-=head2 New Hash Function For 64-bit Builds
-
-We have switched to a hybrid hash function to better balance
-performance for short and long keys.
-
-For short keys, 16 bytes and under, we use an optimised variant of
-One At A Time Hard, and for longer keys we use Siphash 1-3. For very
-long keys this is a big improvement in performance. For shorter keys
-there is a modest improvement.
 
 =head1 Security
 
@@ -97,16 +87,9 @@ There may well be none in a stable release.
 
 =over 4
 
-=item * New Faster Hash Function on 64 bit builds
+=item *
 
-We use a different hash function for short and long keys. This should
-improve performance and security, especially for long keys.
-
-=item * readline is faster
-
-Reading from a file line-by-line with c<readline()> or C<< <> >> should
-now typically be faster due to a better implementation of the code that
-searches for the next newline character.
+XXX
 
 =back
 
@@ -137,6 +120,10 @@ XXX
 =item *
 
 L<XXX> has been upgraded from version A.xx to B.yy.
+
+=item *
+
+L<Module::CoreList> has been upgraded from version 5.20161220 to 5.20170120.
 
 =back
 
@@ -340,8 +327,7 @@ well.
 
 =item *
 
-A new API function, C<sv_set_undef(sv)>, has been added. This is
-equivalent to C<sv_setsv(sv, &PL_sv_undef)>, but is more efficient.
+XXX
 
 =back
 

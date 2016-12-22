@@ -2614,6 +2614,7 @@ cpan/Test-Simple/lib/Test2/API/Stack.pm
 cpan/Test-Simple/lib/Test2/Event.pm
 cpan/Test-Simple/lib/Test2/Event/Bail.pm
 cpan/Test-Simple/lib/Test2/Event/Diag.pm
+cpan/Test-Simple/lib/Test2/Event/Encoding.pm
 cpan/Test-Simple/lib/Test2/Event/Exception.pm
 cpan/Test-Simple/lib/Test2/Event/Generic.pm
 cpan/Test-Simple/lib/Test2/Event/Info.pm
@@ -2622,6 +2623,7 @@ cpan/Test-Simple/lib/Test2/Event/Ok.pm
 cpan/Test-Simple/lib/Test2/Event/Plan.pm
 cpan/Test-Simple/lib/Test2/Event/Skip.pm
 cpan/Test-Simple/lib/Test2/Event/Subtest.pm
+cpan/Test-Simple/lib/Test2/Event/TAP/Version.pm
 cpan/Test-Simple/lib/Test2/Event/Waiting.pm
 cpan/Test-Simple/lib/Test2/Formatter.pm
 cpan/Test-Simple/lib/Test2/Formatter/TAP.pm
@@ -2632,6 +2634,7 @@ cpan/Test-Simple/lib/Test2/Hub/Subtest.pm
 cpan/Test-Simple/lib/Test2/IPC.pm
 cpan/Test-Simple/lib/Test2/IPC/Driver.pm
 cpan/Test-Simple/lib/Test2/IPC/Driver/Files.pm
+cpan/Test-Simple/lib/Test2/Tools/Tiny.pm
 cpan/Test-Simple/lib/Test2/Transition.pod
 cpan/Test-Simple/lib/Test2/Util.pm
 cpan/Test-Simple/lib/Test2/Util/ExternalMeta.pm
@@ -2815,6 +2818,7 @@ cpan/Test-Simple/t/Test2/behavior/special_names.t
 cpan/Test-Simple/t/Test2/behavior/Subtest_buffer_formatter.t
 cpan/Test-Simple/t/Test2/behavior/Subtest_events.t
 cpan/Test-Simple/t/Test2/behavior/Subtest_plan.t
+cpan/Test-Simple/t/Test2/behavior/Subtest_todo.t
 cpan/Test-Simple/t/Test2/behavior/Taint.t
 cpan/Test-Simple/t/Test2/legacy/TAP.t
 cpan/Test-Simple/t/Test2/modules/API.t
@@ -2842,6 +2846,7 @@ cpan/Test-Simple/t/Test2/modules/Hub/Subtest.t
 cpan/Test-Simple/t/Test2/modules/IPC.t
 cpan/Test-Simple/t/Test2/modules/IPC/Driver.t
 cpan/Test-Simple/t/Test2/modules/IPC/Driver/Files.t
+cpan/Test-Simple/t/Test2/modules/Tools/Tiny.t
 cpan/Test-Simple/t/Test2/modules/Util.t
 cpan/Test-Simple/t/Test2/modules/Util/ExternalMeta.t
 cpan/Test-Simple/t/Test2/modules/Util/HashBase.t
@@ -2849,8 +2854,6 @@ cpan/Test-Simple/t/Test2/modules/Util/Trace.t
 cpan/Test-Simple/t/Test2/regression/693_ipc_ordering.t
 cpan/Test-Simple/t/Test2/regression/gh_16.t
 cpan/Test-Simple/t/Test2/regression/ipc_files_abort_exit.t
-cpan/Test-Simple/t/tools.pl
-cpan/Test-Simple/t/tools.t
 cpan/Text-Balanced/lib/Text/Balanced.pm	Text::Balanced
 cpan/Text-Balanced/t/01_compile.t	See if Text::Balanced works
 cpan/Text-Balanced/t/02_extbrk.t	See if Text::Balanced works
@@ -4908,6 +4911,7 @@ pod/perl5254delta.pod		Perl changes in version 5.25.4
 pod/perl5255delta.pod		Perl changes in version 5.25.5
 pod/perl5256delta.pod		Perl changes in version 5.25.6
 pod/perl5257delta.pod		Perl changes in version 5.25.7
+pod/perl5258delta.pod		Perl changes in version 5.25.8
 pod/perl561delta.pod		Perl changes in version 5.6.1
 pod/perl56delta.pod		Perl changes in version 5.6
 pod/perl581delta.pod		Perl changes in version 5.8.1

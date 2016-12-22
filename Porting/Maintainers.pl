@@ -120,7 +120,7 @@ use File::Glob qw(:case);
 %Modules = (
 
     'Archive::Tar' => {
-        'DISTRIBUTION' => 'BINGOS/Archive-Tar-2.20.tar.gz',
+        'DISTRIBUTION' => 'BINGOS/Archive-Tar-2.24.tar.gz',
         'FILES'        => q[cpan/Archive-Tar],
         'BUGS'         => 'bug-archive-tar@rt.cpan.org',
         'EXCLUDED'     => [
@@ -843,7 +843,7 @@ use File::Glob qw(:case);
     },
 
     'Module::CoreList' => {
-        'DISTRIBUTION' => 'BINGOS/Module-CoreList-5.20161120.tar.gz',
+        'DISTRIBUTION' => 'BINGOS/Module-CoreList-5.20161220.tar.gz',
         'FILES'        => q[dist/Module-CoreList],
     },
 
@@ -979,7 +979,7 @@ use File::Glob qw(:case);
     },
 
     'Pod::Simple' => {
-        'DISTRIBUTION' => 'MARCGREEN/Pod-Simple-3.32.tar.gz',
+        'DISTRIBUTION' => 'MARCGREEN/Pod-Simple-3.35.tar.gz',
         'FILES'        => q[cpan/Pod-Simple],
     },
 
@@ -1166,7 +1166,7 @@ use File::Glob qw(:case);
     },
 
     'Test::Simple' => {
-        'DISTRIBUTION' => 'EXODIST/Test-Simple-1.302067.tar.gz',
+        'DISTRIBUTION' => 'EXODIST/Test-Simple-1.302073.tar.gz',
         'FILES'        => q[cpan/Test-Simple],
         'EXCLUDED'     => [
             qr{^examples/},
