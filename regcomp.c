@@ -3911,7 +3911,7 @@ S_join_exact(pTHX_ RExC_state_t *pRExC_state, regnode *scan,
                     }
                     else {
                         STRLEN len;
-                        _to_utf8_fold_flags(s, d, &len, FOLD_FLAGS_FULL);
+                        _toFOLD_utf8_flags(s, s_end, d, &len, FOLD_FLAGS_FULL);
                         d += len;
                     }
                     s += s_len;
@@ -8271,17 +8271,18 @@ S_reg_scan_name(pTHX_ RExC_state_t *pRExC_state, U32 flags)
 
     assert (RExC_parse <= RExC_end);
     if (RExC_parse == RExC_end) NOOP;
-    else if (isIDFIRST_lazy_if(RExC_parse, UTF)) {
+    else if (isIDFIRST_lazy_if_safe(RExC_parse, RExC_end, UTF)) {
          /* Note that the code here assumes well-formed UTF-8.  Skip IDFIRST by
           * using do...while */
 	if (UTF)
 	    do {
 		RExC_parse += UTF8SKIP(RExC_parse);
-	    } while (isWORDCHAR_utf8((U8*)RExC_parse));
+	    } while (   RExC_parse < RExC_end
+                     && isWORDCHAR_utf8_safe((U8*)RExC_parse, (U8*) RExC_end));
 	else
 	    do {
 		RExC_parse++;
-	    } while (isWORDCHAR(*RExC_parse));
+	    } while (RExC_parse < RExC_end && isWORDCHAR(*RExC_parse));
     } else {
         RExC_parse++; /* so the <- from the vFAIL is after the offending
                          character */
@@ -10046,7 +10047,9 @@ Perl__load_PL_utf8_foldclosures (pTHX)
         U8 dummy[UTF8_MAXBYTES_CASE+1];
 
         /* This string is just a short named one above \xff */
-        to_utf8_fold((U8*) HYPHEN_UTF8, dummy, NULL);
+        toFOLD_utf8_safe((U8*) HYPHEN_UTF8,
+                         (U8 *) HYPHEN_UTF8 + sizeof(HYPHEN_UTF8),
+                         dummy, NULL);
         assert(PL_utf8_tofold); /* Verify that worked */
     }
     PL_utf8_foldclosures = _swash_inversion_hash(PL_utf8_tofold);
@@ -10197,7 +10200,7 @@ S__make_exactf_invlist(pTHX_ RExC_state_t *pRExC_state, regnode *node)
                 }
                 else {
                     STRLEN len;
-                    to_utf8_fold(s, d, &len);
+                    toFOLD_utf8_safe(s, e, d, &len);
                     d += len;
                     s += UTF8SKIP(s);
                 }
