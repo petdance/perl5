@@ -2541,7 +2541,7 @@ S_warn_on_first_deprecated_use(pTHX_ const char * const name,
 		Perl_croak(aTHX_ "panic: hv_store() unexpectedly failed");
             }
 
-            if (strEQ(file, "mathoms.c")) {
+            if (instr(file, "mathoms.c")) {
                 Perl_warner(aTHX_ WARN_DEPRECATED,
                             "In %s, line %d, starting in Perl v5.30, %s()"
                             " will be removed.  Avoid this message by"
@@ -2574,7 +2574,6 @@ Perl__is_utf8_FOO(pTHX_       U8   classnum,
     warn_on_first_deprecated_use(name, alternative, use_locale, file, line);
 
     if (use_utf8 && UTF8_IS_ABOVE_LATIN1(*p)) {
-        SV * invlist;
 
         switch (classnum) {
             case _CC_WORDCHAR:
@@ -2607,14 +2606,18 @@ Perl__is_utf8_FOO(pTHX_       U8   classnum,
                 return is_VERTWS_high(p);
             case _CC_IDFIRST:
                 if (! PL_utf8_perl_idstart) {
-                    invlist = _new_invlist_C_array(_Perl_IDStart_invlist);
+                    PL_utf8_perl_idstart
+                                = _new_invlist_C_array(_Perl_IDStart_invlist);
                 }
-                return is_utf8_common(p, &PL_utf8_perl_idstart, "_Perl_IDStart", invlist);
+                return is_utf8_common(p, &PL_utf8_perl_idstart,
+                                      "_Perl_IDStart", NULL);
             case _CC_IDCONT:
                 if (! PL_utf8_perl_idcont) {
-                    invlist = _new_invlist_C_array(_Perl_IDCont_invlist);
+                    PL_utf8_perl_idcont
+                                = _new_invlist_C_array(_Perl_IDCont_invlist);
                 }
-                return is_utf8_common(p, &PL_utf8_perl_idcont, "_Perl_IDCont", invlist);
+                return is_utf8_common(p, &PL_utf8_perl_idcont,
+                                      "_Perl_IDCont", NULL);
         }
     }
 
@@ -2732,6 +2735,8 @@ L</toTITLE_utf8_safe>,
 L</toLOWER_utf8_safe>,
 or L</toFOLD_utf8_safe>.
 
+This function will be removed in Perl v5.28.
+
 C<p> contains the pointer to the UTF-8 string encoding
 the character that is being converted.  This routine assumes that the character
 at C<p> is well-formed.
@@ -2763,9 +2768,19 @@ UV
 Perl_to_utf8_case(pTHX_ const U8 *p, U8* ustrp, STRLEN *lenp,
 			SV **swashp, const char *normal, const char *special)
 {
+    STRLEN len_cp;
+    UV cp;
+    const U8 * e = p + UTF8SKIP(p);
+
     PERL_ARGS_ASSERT_TO_UTF8_CASE;
 
-    return _to_utf8_case(valid_utf8_to_uvchr(p, NULL), p, ustrp, lenp, swashp, normal, special);
+    cp = utf8n_to_uvchr(p, e - p, &len_cp, UTF8_CHECK_ONLY);
+    if (len_cp == (STRLEN) -1) {
+        _force_out_malformed_utf8_message(p, e,
+                                   _UTF8_NO_CONFIDENCE_IN_CURLEN, 1 /* Die */ );
+    }
+
+    return _to_utf8_case(cp, p, ustrp, lenp, swashp, normal, special);
 }
 
     /* change namve uv1 to 'from' */
@@ -3040,27 +3055,27 @@ S_check_and_deprecate(pTHX_ const U8 *p,
         *e = p + UTF8SKIP(p);
 
         /* For mathoms.c calls, we use the function name we know is stored
-         * there */
+         * there.  It could be part of a larger path */
         if (type == DEPRECATE_TO_UPPER) {
-            name = strEQ(file, "mathoms.c")
+            name = instr(file, "mathoms.c")
                    ? "to_utf8_upper"
                    : "toUPPER_utf8";
             alternative = "toUPPER_utf8_safe";
         }
         else if (type == DEPRECATE_TO_TITLE) {
-            name = strEQ(file, "mathoms.c")
+            name = instr(file, "mathoms.c")
                    ? "to_utf8_title"
                    : "toTITLE_utf8";
             alternative = "toTITLE_utf8_safe";
         }
         else if (type == DEPRECATE_TO_LOWER) {
-            name = strEQ(file, "mathoms.c")
+            name = instr(file, "mathoms.c")
                    ? "to_utf8_lower"
                    : "toLOWER_utf8";
             alternative = "toLOWER_utf8_safe";
         }
         else if (type == DEPRECATE_TO_FOLD) {
-            name = strEQ(file, "mathoms.c")
+            name = instr(file, "mathoms.c")
                    ? "to_utf8_fold"
                    : "toFOLD_utf8";
             alternative = "toFOLD_utf8_safe";
@@ -4751,7 +4766,6 @@ Perl__swash_to_invlist(pTHX_ SV* const swash)
             invlist = _new_invlist(0);
         }
         else {
-            while (isSPACE(*l)) l++;
             l = (U8 *) after_atou;
 
             /* Get the 0th element, which is needed to setup the inversion list */
