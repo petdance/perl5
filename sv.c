@@ -4808,8 +4808,13 @@ Perl_sv_set_undef(pTHX_ SV *sv)
 
     if (type <= SVt_IV) {
         assert(!SvGMAGICAL(sv));
-        if (SvREADONLY(sv))
+        if (SvREADONLY(sv)) {
+            /* does undeffing PL_sv_undef count as modifying a read-only
+             * variable? Some XS code does this */
+            if (sv == &PL_sv_undef)
+                return;
             Perl_croak_no_modify();
+        }
 
         if (SvROK(sv)) {
             if (SvWEAKREF(sv))
@@ -4834,8 +4839,8 @@ Perl_sv_set_undef(pTHX_ SV *sv)
     if (isGV_with_GP(sv))
         Perl_ck_warner(aTHX_ packWARN(WARN_MISC),
                        "Undefined value assigned to typeglob");
-
-    SvOK_off(sv);
+    else
+        SvOK_off(sv);
 }
 
 

@@ -135,15 +135,23 @@ L<B::Xref> has been upgraded from version 1.05 to 1.06.
 
 =item *
 
-L<VMS-DCLsym::DCLsym> has been upgraded from version 1.07 to 1.08.
+L<Compress::Raw::Bzip2> has been upgraded from version 2.069 to 2.070.
 
 =item *
 
-L<diagnostics> has been upgraded from version 1.35 to 1.36.
+L<Compress::Raw::Zlib> has been upgraded from version 2.069 to 2.070.
+
+=item *
+
+L<DB_File> has been upgraded from version 1.838 to 1.840.
 
 =item *
 
 L<Devel::SelfStubber> has been upgraded from version 1.05 to 1.06.
+
+=item *
+
+L<diagnostics> has been upgraded from version 1.35 to 1.36.
 
 =item *
 
@@ -171,7 +179,7 @@ L<Module::CoreList> has been upgraded from version 5.20161220 to 5.20170120.
 
 =item *
 
-L<OS2-Process::Process> has been upgraded from version 1.11 to 1.12.
+L<OS2::Process> has been upgraded from version 1.11 to 1.12.
 
 =item *
 
@@ -195,7 +203,15 @@ L<Test> has been upgraded from version 1.29 to 1.30.
 
 =item *
 
+L<threads::shared> has been upgraded from version 1.52 to 1.53.
+
+=item *
+
 L<Unicode::UCD> has been upgraded from version 0.67 to 0.68.
+
+=item *
+
+L<VMS::DCLsym> has been upgraded from version 1.07 to 1.08.
 
 =item *
 

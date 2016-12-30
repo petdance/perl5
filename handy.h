@@ -552,7 +552,7 @@ Variant C<isI<FOO>_A> (e.g., C<isALPHA_A()>) is identical to the base function
 with no suffix C<"_A">.  This variant is used to emphasize by its name that
 only ASCII-range characters can return TRUE.
 
-Variant C<isI<FOO>_L1> imposes the Latin-1 (or EBCDIC equivlalent) character set
+Variant C<isI<FOO>_L1> imposes the Latin-1 (or EBCDIC equivalent) character set
 onto the platform.  That is, the code points that are ASCII are unaffected,
 since ASCII is a subset of Latin-1.  But the non-ASCII code points are treated
 as if they are Latin-1 characters.  For example, C<isWORDCHAR_L1()> will return
@@ -1908,7 +1908,7 @@ _generic_utf8_safe(classnum, p, e, _is_utf8_FOO_with_len(classnum, p, e))
     /* Because all controls are UTF-8 invariants in EBCDIC, we can use this
      * more efficient macro instead of the more general one */
 #   define isCNTRL_utf8_safe(p, e)                                          \
-                    (__ASSERT_(_utf8_safe_assert(p, e)) isCNTRL_L1(*(p))
+                    (__ASSERT_(_utf8_safe_assert(p, e)) isCNTRL_L1(*(p)))
 #else
 #   define isCNTRL_utf8_safe(p, e)  _generic_utf8_safe(_CC_CNTRL, p, e, 0)
 #endif
