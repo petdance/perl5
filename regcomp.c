@@ -177,7 +177,6 @@ struct RExC_state_t {
     U32         study_chunk_recursed_bytes;  /* bytes in bitmap */
     I32		in_lookbehind;
     I32		contains_locale;
-    I32		contains_i;
     I32		override_recoding;
 #ifdef EBCDIC
     I32		recode_x_to_native;
@@ -272,8 +271,6 @@ struct RExC_state_t {
                                    (pRExC_state->study_chunk_recursed_bytes)
 #define RExC_in_lookbehind	(pRExC_state->in_lookbehind)
 #define RExC_contains_locale	(pRExC_state->contains_locale)
-#define RExC_contains_i (pRExC_state->contains_i)
-#define RExC_override_recoding (pRExC_state->override_recoding)
 #ifdef EBCDIC
 #   define RExC_recode_x_to_native (pRExC_state->recode_x_to_native)
 #endif
@@ -6519,8 +6516,12 @@ S_compile_runtime_code(pTHX_ RExC_state_t * const pRExC_state,
 	    *p++ = pat[s];
 	}
 	*p++ = '\'';
-	if (pRExC_state->pm_flags & RXf_PMf_EXTENDED)
+	if (pRExC_state->pm_flags & RXf_PMf_EXTENDED) {
 	    *p++ = 'x';
+            if (pRExC_state->pm_flags & RXf_PMf_EXTENDED_MORE) {
+                *p++ = 'x';
+            }
+        }
 	*p++ = '\0';
 	DEBUG_COMPILE_r({
             Perl_re_printf( aTHX_
@@ -6921,7 +6922,6 @@ Perl_re_op_compile(pTHX_ SV ** const patternp, int pat_count,
     RExC_uni_semantics = 0;
     RExC_seen_unfolded_sharp_s = 0;
     RExC_contains_locale = 0;
-    RExC_contains_i = 0;
     RExC_strict = cBOOL(pm_flags & RXf_PMf_STRICT);
     RExC_study_started = 0;
     pRExC_state->runtime_code_qr = NULL;
@@ -6973,9 +6973,6 @@ Perl_re_op_compile(pTHX_ SV ** const patternp, int pat_count,
 
     rx_flags = orig_rx_flags;
 
-    if (rx_flags & PMf_FOLD) {
-        RExC_contains_i = 1;
-    }
     if (   initial_charset == REGEX_DEPENDS_CHARSET
         && (RExC_utf8 ||RExC_uni_semantics))
     {
@@ -7012,7 +7009,6 @@ Perl_re_op_compile(pTHX_ SV ** const patternp, int pat_count,
     RExC_in_lookbehind = 0;
     RExC_seen_zerolen = *exp == '^' ? -1 : 0;
     RExC_extralen = 0;
-    RExC_override_recoding = 0;
 #ifdef EBCDIC
     RExC_recode_x_to_native = 0;
 #endif
@@ -7170,7 +7166,7 @@ Perl_re_op_compile(pTHX_ SV ** const patternp, int pat_count,
                                                    == REG_RUN_ON_COMMENT_SEEN);
 	U8 reganch = (U8)((r->extflags & RXf_PMf_STD_PMMOD)
 			    >> RXf_PMf_STD_PMMOD_SHIFT);
-	const char *fptr = STD_PAT_MODS;        /*"msixn"*/
+	const char *fptr = STD_PAT_MODS;        /*"msixxn"*/
 	char *p;
 
         /* We output all the necessary flags; we never output a minus, as all
@@ -10434,21 +10430,23 @@ S_parse_lparen_question_flags(pTHX_ RExC_state_t *pRExC_state)
                 }
                 flagsp = &negflags;
                 wastedflags = 0;  /* reset so (?g-c) warns twice */
+                x_mod_count = 0;
                 break;
             case ':':
             case ')':
+
+                if ((posflags & (RXf_PMf_EXTENDED|RXf_PMf_EXTENDED_MORE)) == RXf_PMf_EXTENDED) {
+                    negflags |= RXf_PMf_EXTENDED_MORE;
+                }
                 RExC_flags |= posflags;
+
+                if (negflags & RXf_PMf_EXTENDED) {
+                    negflags |= RXf_PMf_EXTENDED_MORE;
+                }
                 RExC_flags &= ~negflags;
                 set_regex_charset(&RExC_flags, cs);
-                if (RExC_flags & RXf_PMf_FOLD) {
-                    RExC_contains_i = 1;
-                }
 
-                if (UNLIKELY((x_mod_count) > 1)) {
-                    vFAIL("Only one /x regex modifier is allowed");
-                }
                 return;
-                /*NOTREACHED*/
             default:
               fail_modifiers:
                 RExC_parse += SKIP_IF_CHAR(RExC_parse);
@@ -11595,7 +11593,7 @@ S_regbranch(pTHX_ RExC_state_t *pRExC_state, I32 *flagp, I32 first, U32 depth)
 }
 
 /*
- - regpiece - something followed by possible [*+?]
+ - regpiece - something followed by possible quantifier * + ? {n,m}
  *
  * Note that the branching code sequences used for ? and the general cases
  * of * and + are somewhat optimized:  they use the same NOTHING node as
@@ -12147,7 +12145,6 @@ S_grok_bslash_N(pTHX_ RExC_state_t *pRExC_state,
         /* The values are Unicode, and therefore not subject to recoding, but
          * have to be converted to native on a non-Unicode (meaning non-ASCII)
          * platform. */
-	RExC_override_recoding = 1;
 #ifdef EBCDIC
         RExC_recode_x_to_native = 1;
 #endif
@@ -12168,7 +12165,6 @@ S_grok_bslash_N(pTHX_ RExC_state_t *pRExC_state,
 	RExC_start = RExC_adjusted_start = save_start;
 	RExC_parse = endbrace;
 	RExC_end = orig_end;
-	RExC_override_recoding = 0;
 #ifdef EBCDIC
         RExC_recode_x_to_native = 0;
 #endif
@@ -13367,6 +13363,12 @@ S_regatom(pTHX_ RExC_state_t *pRExC_state, I32 *flagp, U32 depth)
                         RExC_parse = p + 1;
 			vFAIL("Unescaped left brace in regex is illegal here");
 		    }
+		    goto normal_default;
+                case '}':
+                case ']':
+                    if (PASS2 && p > RExC_parse && RExC_strict) {
+                        ckWARN2reg(p + 1, "Unescaped literal '%c'", *p);
+                    }
 		    /*FALLTHROUGH*/
 		default:    /* A literal character */
 		  normal_default:
@@ -15801,8 +15803,10 @@ S_regclass(pTHX_ RExC_state_t *pRExC_state, I32 *flagp, U32 depth,
                                        character; used under /i */
     UV n;
     char * stop_ptr = RExC_end;    /* where to stop parsing */
-    const bool skip_white = cBOOL(ret_invlist); /* ignore unescaped white
-                                                   space? */
+
+    /* ignore unescaped whitespace? */
+    const bool skip_white = cBOOL(   ret_invlist
+                                  || (RExC_flags & RXf_PMf_EXTENDED_MORE));
 
     /* Unicode properties are stored in a swash; this holds the current one
      * being parsed.  If this swash is the only above-latin1 component of the
@@ -17017,7 +17021,6 @@ S_regclass(pTHX_ RExC_state_t *pRExC_state, I32 *flagp, U32 depth,
         RExC_adjusted_start = RExC_start + prefix_end;
 	RExC_end = RExC_parse + len;
         RExC_in_multi_char_class = 1;
-	RExC_override_recoding = 1;
         RExC_emit = (regnode *)orig_emit;
 
 	ret = reg(pRExC_state, 1, &reg_flags, depth+1);
@@ -17030,7 +17033,6 @@ S_regclass(pTHX_ RExC_state_t *pRExC_state, I32 *flagp, U32 depth,
         RExC_precomp_adj = 0;
 	RExC_end = save_end;
 	RExC_in_multi_char_class = 0;
-	RExC_override_recoding = 0;
         SvREFCNT_dec_NN(multi_char_matches);
         return ret;
     }

@@ -4230,14 +4230,6 @@ C<sysread()>ing a file, or when seeking past the end of a scalar opened
 for I/O (in anticipation of future reads and to imitate the behavior
 with real files).
 
-=item Only one /x regex modifier is allowed
-
-=item Only one /x regex modifier is allowed in regex; marked by <-- HERE in m/%s/
-
-(F) You used the C</x> regular expression pattern modifier at least twice in a
-string of modifiers.  This has been made illegal, in order to allow future
-extensions to the Perl language.
-
 =item %s() on unopened %s
 
 (W unopened) An I/O operation was attempted on a filehandle that was
@@ -6334,6 +6326,26 @@ as the first character following a quantifier
  /\s*{/
 
 =back
+
+=item Unescaped literal '%c' in regex; marked by <-- HERE in m/%s/
+
+(W regexp) (only under C<S<use re 'strict'>>)
+
+Within the scope of C<S<use re 'strict'>> in a regular expression
+pattern, you included an unescaped C<}> or C<]> which was interpreted
+literally.  These two characters are sometimes metacharacters, and
+sometimes literals, depending on what precedes them in the
+pattern.  This is unlike the similar C<)> which is always a
+metacharacter unless escaped.
+
+This action at a distance, perhaps a large distance, can lead to Perl
+silently misinterpreting what you meant, so when you specify that you
+want extra checking by C<S<use re 'strict'>>, this warning is generated.
+If you meant the character as a literal, simply confirm that to Perl by
+preceding the character with a backslash, or make it into a bracketed
+character class (like C<[}]>).  If you meant it as closing a
+corresponding C<[> or C<{>, you'll need to look back through the pattern
+to find out why that isn't happening.
 
 =item unexec of %s into %s failed!
 
