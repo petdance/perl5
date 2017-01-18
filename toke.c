@@ -467,7 +467,7 @@ S_printbuf(pTHX_ const char *const fmt, const char *const s)
 static int
 S_deprecate_commaless_var_list(pTHX) {
     PL_expect = XTERM;
-    deprecate("comma-less variable list");
+    deprecate_fatal_in("5.28", "Use of comma-less variable list is deprecated");
     return REPORT(','); /* grandfather non-comma-format format */
 }
 
@@ -2563,8 +2563,7 @@ S_get_and_check_backslash_N_name(pTHX_ const char* s, const char* const e)
     PERL_ARGS_ASSERT_GET_AND_CHECK_BACKSLASH_N_NAME;
 
     if (!SvCUR(res)) {
-        Perl_ck_warner_d(aTHX_ packWARN(WARN_DEPRECATED),
-                       "Unknown charname '' is deprecated");
+        deprecate_fatal_in("5.28", "Unknown charname '' is deprecated");
         return res;
     }
 
@@ -5771,7 +5770,8 @@ Perl_yylex(pTHX)
 		    if (len == 6 && strnEQ(SvPVX(sv), "unique", len)) {
 			sv_free(sv);
 			if (PL_in_my == KEY_our) {
-			    deprecate(":unique");
+                            deprecate_disappears_in("5.28",
+                                "Attribute \"unique\" is deprecated");
 			}
 			else
 			    Perl_croak(aTHX_ "The 'unique' attribute may only be applied to 'our' variables");
@@ -5785,7 +5785,8 @@ Perl_yylex(pTHX)
 		    }
 		    else if (!PL_in_my && len == 6 && strnEQ(SvPVX(sv), "locked", len)) {
 			sv_free(sv);
-			deprecate(":locked");
+                        deprecate_disappears_in("5.28",
+                            "Attribute \"locked\" is deprecated");
 		    }
 		    else if (!PL_in_my && len == 6 && strnEQ(SvPVX(sv), "method", len)) {
 			sv_free(sv);
@@ -7028,8 +7029,10 @@ Perl_yylex(pTHX)
 	    else {			/* no override */
 		tmp = -tmp;
 		if (tmp == KEY_dump) {
-		    Perl_ck_warner(aTHX_ packWARN(WARN_MISC),
-				   "dump() better written as CORE::dump()");
+		    Perl_ck_warner_d(aTHX_ packWARN2(WARN_MISC,WARN_DEPRECATED),
+				     "dump() better written as CORE::dump(). "
+                                     "dump() will no longer be available " 
+                                     "in Perl 5.30");
 		}
 		gv = NULL;
 		gvp = 0;
@@ -9738,7 +9741,7 @@ S_scan_heredoc(pTHX_ char *s)
 	else
 	    term = '"';
 	if (! isWORDCHAR_lazy_if_safe(s, PL_bufend, UTF))
-	    deprecate("bare << to mean <<\"\"");
+	    deprecate_fatal_in("5.28", "Use of bare << to mean <<\"\" is deprecated");
 	peek = s;
         while (
                isWORDCHAR_lazy_if_safe(peek, PL_bufend, UTF))
@@ -10588,6 +10591,15 @@ Perl_scan_num(pTHX_ const char *start, YYSTYPE* lvalp)
     bool floatit;			/* boolean: int or float? */
     const char *lastub = NULL;		/* position of last underbar */
     static const char* const number_too_long = "Number too long";
+    bool warned_about_underscore = 0;
+#define WARN_ABOUT_UNDERSCORE() \
+	do { \
+	    if (!warned_about_underscore) { \
+		warned_about_underscore = 1; \
+		Perl_ck_warner(aTHX_ packWARN(WARN_SYNTAX), \
+			       "Misplaced _ in number"); \
+	    } \
+	} while(0)
     /* Hexadecimal floating point.
      *
      * In many places (where we have quads and NV is IEEE 754 double)
@@ -10672,8 +10684,7 @@ Perl_scan_num(pTHX_ const char *start, YYSTYPE* lvalp)
 	    }
 
 	    if (*s == '_') {
-		Perl_ck_warner(aTHX_ packWARN(WARN_SYNTAX),
-			       "Misplaced _ in number");
+		WARN_ABOUT_UNDERSCORE();
 	       lastub = s++;
 	    }
 
@@ -10696,8 +10707,7 @@ Perl_scan_num(pTHX_ const char *start, YYSTYPE* lvalp)
 		/* _ are ignored -- but warned about if consecutive */
 		case '_':
 		    if (lastub && s == lastub + 1)
-		        Perl_ck_warner(aTHX_ packWARN(WARN_SYNTAX),
-				       "Misplaced _ in number");
+			WARN_ABOUT_UNDERSCORE();
 		    lastub = s++;
 		    break;
 
@@ -10782,9 +10792,8 @@ Perl_scan_num(pTHX_ const char *start, YYSTYPE* lvalp)
 	  out:
 
 	    /* final misplaced underbar check */
-	    if (s[-1] == '_') {
-		Perl_ck_warner(aTHX_ packWARN(WARN_SYNTAX), "Misplaced _ in number");
-	    }
+	    if (s[-1] == '_')
+		WARN_ABOUT_UNDERSCORE();
 
             if (UNLIKELY(HEXFP_PEEK(s))) {
                 /* Do sloppy (on the underbars) but quick detection
@@ -10993,8 +11002,7 @@ Perl_scan_num(pTHX_ const char *start, YYSTYPE* lvalp)
 	    */
 	    if (*s == '_') {
 		if (lastub && s == lastub + 1)
-		    Perl_ck_warner(aTHX_ packWARN(WARN_SYNTAX),
-				   "Misplaced _ in number");
+		    WARN_ABOUT_UNDERSCORE();
 		lastub = s++;
 	    }
 	    else {
@@ -11007,9 +11015,8 @@ Perl_scan_num(pTHX_ const char *start, YYSTYPE* lvalp)
 	}
 
 	/* final misplaced underbar check */
-	if (lastub && s == lastub + 1) {
-	    Perl_ck_warner(aTHX_ packWARN(WARN_SYNTAX), "Misplaced _ in number");
-	}
+	if (lastub && s == lastub + 1)
+	    WARN_ABOUT_UNDERSCORE();
 
 	/* read a decimal portion if there is one.  avoid
 	   3..5 being interpreted as the number 3. followed
@@ -11020,8 +11027,7 @@ Perl_scan_num(pTHX_ const char *start, YYSTYPE* lvalp)
 	    *d++ = *s++;
 
 	    if (*s == '_') {
-		Perl_ck_warner(aTHX_ packWARN(WARN_SYNTAX),
-			       "Misplaced _ in number");
+		WARN_ABOUT_UNDERSCORE();
 		lastub = s;
 	    }
 
@@ -11037,18 +11043,15 @@ Perl_scan_num(pTHX_ const char *start, YYSTYPE* lvalp)
 		    Perl_croak(aTHX_ "%s", number_too_long);
 		if (*s == '_') {
 		   if (lastub && s == lastub + 1)
-		       Perl_ck_warner(aTHX_ packWARN(WARN_SYNTAX),
-				      "Misplaced _ in number");
+			WARN_ABOUT_UNDERSCORE();
 		   lastub = s;
 		}
 		else
 		    *d++ = *s;
 	    }
 	    /* fractional part ending in underbar? */
-	    if (s[-1] == '_') {
-		Perl_ck_warner(aTHX_ packWARN(WARN_SYNTAX),
-			       "Misplaced _ in number");
-	    }
+	    if (s[-1] == '_')
+		WARN_ABOUT_UNDERSCORE();
 	    if (*s == '.' && isDIGIT(s[1])) {
 		/* oops, it's really a v-string, but without the "v" */
 		s = start;
@@ -11078,8 +11081,7 @@ Perl_scan_num(pTHX_ const char *start, YYSTYPE* lvalp)
 
 	    /* stray preinitial _ */
 	    if (*s == '_') {
-		Perl_ck_warner(aTHX_ packWARN(WARN_SYNTAX),
-			       "Misplaced _ in number");
+		WARN_ABOUT_UNDERSCORE();
 	        lastub = s++;
 	    }
 
@@ -11089,8 +11091,7 @@ Perl_scan_num(pTHX_ const char *start, YYSTYPE* lvalp)
 
 	    /* stray initial _ */
 	    if (*s == '_') {
-		Perl_ck_warner(aTHX_ packWARN(WARN_SYNTAX),
-			       "Misplaced _ in number");
+		WARN_ABOUT_UNDERSCORE();
 	        lastub = s++;
 	    }
 
@@ -11104,8 +11105,7 @@ Perl_scan_num(pTHX_ const char *start, YYSTYPE* lvalp)
 		else {
 		   if (((lastub && s == lastub + 1)
                         || (!isDIGIT(s[1]) && s[1] != '_')))
-		       Perl_ck_warner(aTHX_ packWARN(WARN_SYNTAX),
-				      "Misplaced _ in number");
+			WARN_ABOUT_UNDERSCORE();
 		   lastub = s++;
 		}
 	    }

@@ -1217,7 +1217,8 @@ Perl_gv_autoload_pvn(pTHX_ HV *stash, const char *name, STRLEN len, U32 flags)
     )
 	Perl_ck_warner_d(aTHX_ packWARN(WARN_DEPRECATED),
 			 "Use of inherited AUTOLOAD for non-method %" SVf
-			 "::%" UTF8f "() is deprecated",
+			 "::%" UTF8f "() is deprecated. This will be "
+                         "fatal in Perl 5.28",
 			 SVfARG(packname),
                          UTF8fARG(is_utf8, len, name));
 
@@ -2156,9 +2157,10 @@ S_gv_magicalize(pTHX_ GV *gv, HV *stash, const char *name, STRLEN len,
 	case '*':		/* $* */
 	case '#':		/* $# */
 	    if (sv_type == SVt_PV)
-		/* diag_listed_as: $* is no longer supported */
+		/* diag_listed_as: $* is no longer supported. Its use will be fatal in Perl 5.30 */
 		Perl_ck_warner_d(aTHX_ packWARN2(WARN_DEPRECATED, WARN_SYNTAX),
-				 "$%c is no longer supported", *name);
+				 "$%c is no longer supported. Its use "
+                                 "will be fatal in Perl 5.30", *name);
 	    break;
 	case '\010':	/* $^H */
 	    {
@@ -2268,10 +2270,11 @@ S_maybe_multimagic_gv(pTHX_ GV *gv, const char *name, const svtype sv_type)
             require_tie_mod_s(gv, *name, "Tie::Hash::NamedCapture", 0);
     } else if (sv_type == SVt_PV) {
         if (*name == '*' || *name == '#') {
-            /* diag_listed_as: $* is no longer supported */
+            /* diag_listed_as: $# is no longer supported. Its use will be fatal in Perl 5.30 */
             Perl_ck_warner_d(aTHX_ packWARN2(WARN_DEPRECATED,
                                              WARN_SYNTAX),
-                             "$%c is no longer supported", *name);
+                             "$%c is no longer supported. Its use "
+                             "will be fatal in Perl 5.30", *name);
         }
     }
     if (sv_type==SVt_PV || sv_type==SVt_PVGV) {

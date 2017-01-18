@@ -104,7 +104,12 @@ There may well be none in a stable release.
 
 =item *
 
-XXX
+A hash in boolean context is now sometimes faster, e.g.
+
+    if (!%h) { ... }
+
+This was already special-cased, but some cases were missed, and even the
+ones which weren't have been improved.
 
 =back
 
@@ -240,6 +245,10 @@ L<VMS::DCLsym> has been upgraded from version 1.07 to 1.08.
 
 L<XSLoader> has been upgraded from version 0.24 to 0.26.
 
+=item *
+
+L<CPAN> has been upgraded from version 2.14_01 to 2.16.
+
 =back
 
 =head2 Removed Modules and Pragmata
@@ -317,13 +326,108 @@ XXX L<message|perldiag/"message">
 
 =head2 Changes to Existing Diagnostics
 
-XXX Changes (i.e. rewording) of diagnostic messages go here
+As of Perl 5.25.9, all new deprecations will come with a version in
+which the feature will disappear. And with a few exceptions, most
+existing deprecations will state when they'll disappear. As such, most
+deprecation messages have changed.
 
 =over 4
 
 =item *
 
-XXX Describe change here
+Attribute "locked" is deprecated, and will disappear in Perl 5.28
+
+=item *
+
+Attribute "unique" is deprecated, and will disappear in Perl 5.28
+
+=item *
+
+"\c%c" is more clearly written simply as "%s". This will be a fatal error
+in Perl 5.28
+
+=item *
+
+Constants from lexical variables potentially modified elsewhere are
+deprecated. This will not be allowed in Perl 5.32
+
+=item *
+
+Deprecated use of my() in false conditional. This will be a fatal error
+in Perl 5.30
+
+=item *
+
+dump() better written as CORE::dump(). dump() will no longer be available 
+in Perl 5.30
+
+=item *
+
+${^ENCODING} is no longer supported. Its use will be fatal in Perl 5.28
+
+=item *
+
+File::Glob::glob() will disappear in perl 5.30. Use File::Glob::bsd_glob()
+instead.
+
+=item *
+
+%s() is deprecated on :utf8 handles. This will be a fatal error in Perl 5.30
+
+=item *
+
+$* is no longer supported. Its use will be fatal in Perl 5.30
+
+=item *
+
+$* is no longer supported. Its use will be fatal in Perl 5.30
+
+=item *
+
+Opening dirhandle %s also as a file. This will be a fatal error in Perl 5.28
+
+=item *
+
+Opening filehandle %s also as a directory. This will be a fatal
+error in Perl 5.28
+
+=item *
+
+Setting $/ to a reference to %s as a form of slurp is deprecated,
+treating as undef. This will be fatal in Perl 5.28
+
+=item *
+
+Unescaped left brace in regex is deprecated here (and will be fatal
+in Perl 5.30), passed through in regex; marked by S<<-- HERE> in m/%s/
+
+=item *
+
+Unknown charname '' is deprecated. Its use will be fatal in Perl 5.28
+
+=item *
+
+Use of bare << to mean <<"" is deprecated. Its use will be fatal in Perl 5.28
+
+=item *
+
+Use of code point 0x%s is deprecated; the permissible max is 0x%s.
+This will be fatal in Perl 5.28
+
+=item *
+
+Use of comma-less variable list is deprecated. Its use will be fatal
+in Perl 5.28
+
+=item *
+
+Use of inherited AUTOLOAD for non-method %s() is deprecated. This
+will be fatal in Perl 5.28
+
+=item * 
+
+Use of strings with code points over 0xFF as arguments to %s operator
+is deprecated. This will be a fatal error in Perl 5.28
 
 =back
 
@@ -548,6 +652,20 @@ The range operator C<..> on strings now handles its arguments correctly when in
 the scope of the L<< C<unicode_strings>|feature/"The 'unicode_strings' feature" >>
 feature. The previous behaviour was sufficiently unexpected that we believe no
 correct program could have made use of it.
+
+=item *
+
+The S<split> operator did not ensure enough space was allocated for
+its return value in scalar context.  It could then write a single
+pointer immediately beyond the end of the memory block allocated for
+the stack.  [perl #130262]
+
+=item *
+
+Using a large code point with the C<W> pack template character with
+the current output position aligned at just the right point could
+cause a write a single zero byte immediately beyond the end of an
+allocated buffer.  [perl #129149]
 
 =back
 

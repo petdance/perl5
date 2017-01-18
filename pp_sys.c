@@ -630,7 +630,7 @@ PP(pp_open)
 
 	if (IoDIRP(io))
 	    Perl_ck_warner_d(aTHX_ packWARN2(WARN_IO, WARN_DEPRECATED),
-			     "Opening dirhandle %" HEKf " also as a file",
+			     "Opening dirhandle %" HEKf " also as a file. This will be a fatal error in Perl 5.28",
 			     HEKfARG(GvENAME_HEK(gv)));
 
 	mg = SvTIED_mg((const SV *)io, PERL_MAGIC_tiedscalar);
@@ -1719,7 +1719,8 @@ PP(pp_sysread)
     if ((fp_utf8 = PerlIO_isutf8(IoIFP(io))) && !IN_BYTES) {
         if (PL_op->op_type == OP_SYSREAD || PL_op->op_type == OP_RECV) {
             Perl_ck_warner_d(aTHX_ packWARN(WARN_DEPRECATED),
-                             "%s() is deprecated on :utf8 handles",
+                             "%s() is deprecated on :utf8 handles. "
+                             "This will be a fatal error in Perl 5.30",
                              OP_DESC(PL_op));
         }
 	buffer = SvPVutf8_force(bufsv, blen);
@@ -1982,7 +1983,8 @@ PP(pp_syswrite)
 
     if (PerlIO_isutf8(IoIFP(io))) {
         Perl_ck_warner_d(aTHX_ packWARN(WARN_DEPRECATED),
-                         "%s() is deprecated on :utf8 handles",
+                         "%s() is deprecated on :utf8 handles. "
+                         "This will be a fatal error in Perl 5.30",
                          OP_DESC(PL_op));
 	if (!SvUTF8(bufsv)) {
 	    /* We don't modify the original scalar.  */
@@ -4008,7 +4010,7 @@ PP(pp_open_dir)
 
     if ((IoIFP(io) || IoOFP(io)))
 	Perl_ck_warner_d(aTHX_ packWARN2(WARN_IO, WARN_DEPRECATED),
-			 "Opening filehandle %" HEKf " also as a directory",
+			 "Opening filehandle %" HEKf " also as a directory. This will be a fatal error in Perl 5.28",
 			     HEKfARG(GvENAME_HEK(gv)) );
     if (IoDIRP(io))
 	PerlDir_close(IoDIRP(io));

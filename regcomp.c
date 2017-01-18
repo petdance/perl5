@@ -819,6 +819,13 @@ static const scan_data_t zero_scan_data =
                                        REPORT_LOCATION_ARGS(loc));      \
 } STMT_END
 
+#define	vWARN4dep(loc, m, a1, a2, a3) STMT_START {			       \
+    __ASSERT_(PASS2) Perl_warner(aTHX_ packWARN2(WARN_REGEXP,WARN_DEPRECATED), \
+                                       m REPORT_LOCATION,                      \
+	                               a1, a2, a3,                             \
+                                       REPORT_LOCATION_ARGS(loc));             \
+} STMT_END
+
 #define	ckWARN4reg(loc, m, a1, a2, a3) STMT_START {			\
     __ASSERT_(PASS2) Perl_ck_warner(aTHX_ packWARN(WARN_REGEXP),        \
                                           m REPORT_LOCATION,            \
@@ -13788,7 +13795,7 @@ S_regatom(pTHX_ RExC_state_t *pRExC_state, I32 *flagp, U32 depth)
     skip_to_be_ignored_text(pRExC_state, &RExC_parse,
                                             FALSE /* Don't force to /x */ );
     if (PASS2 && *RExC_parse == '{' && OP(ret) != SBOL && ! regcurly(RExC_parse)) {
-        ckWARNregdep(RExC_parse + 1, "Unescaped left brace in regex is deprecated here, passed through");
+        ckWARNregdep(RExC_parse + 1, "Unescaped left brace in regex is deprecated here (and will be fatal in Perl 5.30), passed through");
     }
 
     return(ret);
@@ -16866,20 +16873,22 @@ S_regclass(pTHX_ RExC_state_t *pRExC_state, I32 *flagp, U32 depth,
                     literal[d++] = (char) value;
                     literal[d++] = '\0';
 
-                    vWARN4(RExC_parse,
-                           "\"%.*s\" is more clearly written simply as \"%s\"",
+                    vWARN4dep(RExC_parse,
+                           "\"%.*s\" is more clearly written simply as \"%s\". "
+                           "This will be a fatal error in Perl 5.28",
                            (int) (RExC_parse - rangebegin),
                            rangebegin,
                            literal
-                        );
+                    );
                 }
                 else if isMNEMONIC_CNTRL(value) {
-                    vWARN4(RExC_parse,
-                           "\"%.*s\" is more clearly written simply as \"%s\"",
+                    vWARN4dep(RExC_parse,
+                           "\"%.*s\" is more clearly written simply as \"%s\". "
+                           "This will be a fatal error in Perl 5.28",
                            (int) (RExC_parse - rangebegin),
                            rangebegin,
                            cntrl_to_mnemonic((U8) value)
-                        );
+                    );
                 }
             }
         }
