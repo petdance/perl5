@@ -2837,7 +2837,7 @@ S_get_and_check_backslash_N_name(pTHX_ const char* s, const char* const e)
 	  } (end if backslash)
           handle regular character
     } (end while character to read)
-		
+
 */
 
 STATIC char *
@@ -2912,8 +2912,8 @@ S_scan_const(pTHX_ char *start)
              * range, so for most cases we just drop down and handle the value
              * as any other.  There are two exceptions.
              *
-             * 1.  A minus sign indicates that we are actually going to have
-             *     a range.  In this case, skip the '-', set a flag, then drop
+             * 1.  A hyphen indicates that we are actually going to have a
+             *     range.  In this case, skip the '-', set a flag, then drop
              *     down to handle what should be the end range value.
              * 2.  After we've handled that value, the next time through, that
              *     flag is set and we fix up the range.
@@ -2931,11 +2931,10 @@ S_scan_const(pTHX_ char *start)
 
 	    if (! dorange) {
 
-                /* Here, we don't think we're in a range.  If we've processed
-                 * at least one character, then see if this next one is a '-',
-                 * indicating the previous one was the start of a range.  But
-                 * don't bother if we're too close to the end for the minus to
-                 * mean that. */
+                /* Here, we don't think we're in a range.  If the new character
+                 * is not a hyphen; or if it is a hyphen, but it's too close to
+                 * either edge to indicate a range, then it's a regular
+                 * character. */
                 if (*s != '-' || s >= send - 1 || s == start) {
 
                     /* A regular character.  Process like any other, but first
@@ -2946,25 +2945,26 @@ S_scan_const(pTHX_ char *start)
                     non_portable_endpoint = 0;
                     backslash_N = 0;
 #endif
-                    /* The tests here and the following 'else' for being above
-                     * Latin1 suffice to find all such occurences in the
-                     * constant, except those added by a backslash escape
-                     * sequence, like \x{100}.  And all those set
-                     * 'has_above_latin1' as appropriate */
+                    /* The tests here for being above Latin1 and similar ones
+                     * in the following 'else' suffice to find all such
+                     * occurences in the constant, except those added by a
+                     * backslash escape sequence, like \x{100}.  And all those
+                     * set 'has_above_latin1' as appropriate */
                     if (this_utf8 && UTF8_IS_ABOVE_LATIN1(*s)) {
                         has_above_latin1 = TRUE;
                     }
 
                     /* Drops down to generic code to process current byte */
                 }
-                else {
+                else {  /* Is a '-' in the context where it means a range */
                     if (didrange) { /* Something like y/A-C-Z// */
-                        Perl_croak(aTHX_ "Ambiguous range in transliteration operator");
+                        Perl_croak(aTHX_ "Ambiguous range in transliteration"
+                                         " operator");
                     }
 
                     dorange = TRUE;
 
-                    s++;    /* Skip past the minus */
+                    s++;    /* Skip past the hyphen */
 
                     /* d now points to where the end-range character will be
                      * placed.  Save it so won't have to go finding it later,
@@ -2978,6 +2978,8 @@ S_scan_const(pTHX_ char *start)
                     if (this_utf8 && UTF8_IS_ABOVE_LATIN1(*s)) {
                         has_above_latin1 = TRUE;
                     }
+
+                    /* Drops down to generic code to process current byte */
                 }
             }  /* End of not a range */
             else {
@@ -2989,20 +2991,21 @@ S_scan_const(pTHX_ char *start)
                  * 'd'  points to just beyond the range end in the 'sv' string,
                  *      where we would next place something
                  * 'offset_to_max' is the offset in 'sv' at which the character
-                 *      before 'd' begins.
+                 *      (the range's maximum end point) before 'd'  begins.
                  */
-                const char * max_ptr = SvPVX_const(sv) + offset_to_max;
-                const char * min_ptr;
+                char * max_ptr = SvPVX(sv) + offset_to_max;
+                char * min_ptr;
                 IV range_min;
 		IV range_max;	/* last character in range */
-                STRLEN save_offset;
                 STRLEN grow;
+                Size_t offset_to_min = 0;
+                Size_t extras = 0;
 #ifdef EBCDIC
                 bool convert_unicode;
                 IV real_range_max = 0;
 #endif
 
-                /* Get the range-ends code point values. */
+                /* Get the code point values of the range ends. */
                 if (has_utf8) {
                     /* We know the utf8 is valid, because we just constructed
                      * it ourselves in previous loop iterations */
@@ -3016,6 +3019,19 @@ S_scan_const(pTHX_ char *start)
                     range_max = * (U8*) max_ptr;
                 }
 
+                /* If the range is just a single code point, like tr/a-a/.../,
+                 * that code point is already in the output, twice.  We can
+                 * just back up over the second instance and avoid all the rest
+                 * of the work.  But if it is a variant character, it's been
+                 * counted twice, so decrement */
+                if (UNLIKELY(range_max == range_min)) {
+                    d = max_ptr;
+                    if (! has_utf8 && ! UVCHR_IS_INVARIANT(range_max)) {
+                        utf8_variant_count--;
+                    }
+                    goto range_done;
+                }
+
 #ifdef EBCDIC
                 /* On EBCDIC platforms, we may have to deal with portable
                  * ranges.  These happen if at least one range endpoint is a
@@ -3023,16 +3039,16 @@ S_scan_const(pTHX_ char *start)
                  * [A-Z] or [a-z], and both ends are literal characters,
                  * like 'A', and not like \x{C1} */
                 convert_unicode =
-                       cBOOL(backslash_N)   /* \N{} forces Unicode, hence
-                                               portable range */
-                      || (   ! non_portable_endpoint
-                          && ((  isLOWER_A(range_min) && isLOWER_A(range_max))
-                             || (isUPPER_A(range_min) && isUPPER_A(range_max))));
+                               cBOOL(backslash_N)   /* \N{} forces Unicode,
+                                                       hence portable range */
+                    || (     ! non_portable_endpoint
+                        && ((  isLOWER_A(range_min) && isLOWER_A(range_max))
+                           || (isUPPER_A(range_min) && isUPPER_A(range_max))));
                 if (convert_unicode) {
 
                     /* Special handling is needed for these portable ranges.
-                     * They are defined to all be in Unicode terms, which
-                     * include all Unicode code points between the end points.
+                     * They are defined to be in Unicode terms, which includes
+                     * all the Unicode code points between the end points.
                      * Convert to Unicode to get the Unicode range.  Later we
                      * will convert each code point in the range back to
                      * native.  */
@@ -3050,7 +3066,6 @@ S_scan_const(pTHX_ char *start)
                         range_max = UNI_TO_NATIVE(range_max);
                     }
 #endif
-
                     /* Use the characters themselves for the error message if
                      * ASCII printables; otherwise some visible representation
                      * of them */
@@ -3061,32 +3076,40 @@ S_scan_const(pTHX_ char *start)
                     }
 #ifdef EBCDIC
                     else if (convert_unicode) {
-                        /* diag_listed_as: Invalid range "%s" in transliteration operator */
+        /* diag_listed_as: Invalid range "%s" in transliteration operator */
                         Perl_croak(aTHX_
-			       "Invalid range \"\\N{U+%04" UVXf "}-\\N{U+%04" UVXf "}\""
-                               " in transliteration operator",
-			       range_min, range_max);
+                           "Invalid range \"\\N{U+%04" UVXf "}-\\N{U+%04"
+                           UVXf "}\" in transliteration operator",
+                           range_min, range_max);
                     }
 #endif
                     else {
-                        /* diag_listed_as: Invalid range "%s" in transliteration operator */
+        /* diag_listed_as: Invalid range "%s" in transliteration operator */
                         Perl_croak(aTHX_
-			       "Invalid range \"\\x{%04" UVXf "}-\\x{%04" UVXf "}\""
-                               " in transliteration operator",
-			       range_min, range_max);
+                           "Invalid range \"\\x{%04" UVXf "}-\\x{%04" UVXf "}\""
+                           " in transliteration operator",
+                           range_min, range_max);
                     }
                 }
+
+                /* If the range is exactly two code points long, they are
+                 * already both in the output */
+                if (UNLIKELY(range_min + 1 == range_max)) {
+                    goto range_done;
+                }
+
+                /* Here the range contains at least 3 code points */
 
 		if (has_utf8) {
 
                     /* If everything in the transliteration is below 256, we
                      * can avoid special handling later.  A translation table
-                     * of each of those bytes is created.  And so we expand out
-                     * all ranges to their constituent code points.  But if
-                     * we've encountered something above 255, the expanding
-                     * won't help, so skip doing that.  But if it's EBCDIC, we
-                     * may have to look at each character below 256 if we have
-                     * to convert to/from Unicode values */
+                     * for each of those bytes is created by op.c.  So we
+                     * expand out all ranges to their constituent code points.
+                     * But if we've encountered something above 255, the
+                     * expanding won't help, so skip doing that.  But if it's
+                     * EBCDIC, we may have to look at each character below 256
+                     * if we have to convert to/from Unicode values */
                     if (   has_above_latin1
 #ifdef EBCDIC
 		        && (range_min > 255 || ! convert_unicode)
@@ -3095,7 +3118,7 @@ S_scan_const(pTHX_ char *start)
                         /* Move the high character one byte to the right; then
                          * insert between it and the range begin, an illegal
                          * byte which serves to indicate this is a range (using
-                         * a '-' could be ambiguous). */
+                         * a '-' would be ambiguous). */
                         char *e = d++;
                         while (e-- > max_ptr) {
                             *(e + 1) = *e;
@@ -3117,51 +3140,94 @@ S_scan_const(pTHX_ char *start)
 		}
 
                 /* Here we need to expand out the string to contain each
-                 * character in the range.  Grow the output to handle this */
-
-                save_offset  = min_ptr - SvPVX_const(sv);
-
-                /* The base growth is the number of code points in the range */
-                grow = range_max - range_min + 1;
-                if (has_utf8) {
-
-                    /* But if the output is UTF-8, some of those characters may
-                     * need two bytes (since the maximum range value here is
-                     * 255, the max bytes per character is two).  On ASCII
-                     * platforms, it's not much trouble to get an accurate
-                     * count of what's needed.  But on EBCDIC, the ones that
-                     * need 2 bytes are scattered around, so just use a worst
-                     * case value instead of calculating for that platform.  */
+                 * character in the range.  Grow the output to handle this.
+                 * For non-UTF8, we need a byte for each code point in the
+                 * range, minus the three that we've already allocated for: the
+                 * hyphen, the min, and the max.  For UTF-8, we need this
+                 * plus an extra byte for each code point that occupies two
+                 * bytes (is variant) when in UTF-8 (except we've already
+                 * allocated for the end points, including if they are
+                 * variants).  For ASCII platforms and Unicode ranges on EBCDIC
+                 * platforms, it's easy to calculate a precise number.  To
+                 * start, we count the variants in the range, which we need
+                 * elsewhere in this function anyway.  (For the case where it
+                 * isn't easy to calculate, 'extras' has been initialized to 0,
+                 * and the calculation is done in a loop further down.) */
 #ifdef EBCDIC
-                    grow *= 2;
-#else
-                    /* Only those above 127 require 2 bytes.  This may be
-                     * everything in the range, or not */
-                    if (range_min > 127) {
-                        grow *= 2;
-                    }
-                    else if (range_max > 127) {
-                        grow += range_max - 127;
-                    }
+                if (convert_unicode)
 #endif
+                {
+                    /* This is executed unconditionally on ASCII, and for
+                     * Unicode ranges on EBCDIC.  Under these conditions, all
+                     * code points above a certain value are variant; and none
+                     * under that value are.  We just need to find out how much
+                     * of the range is above that value.  We don't count the
+                     * end points here, as they will already have been counted
+                     * as they were parsed. */
+                    if (range_min >= UTF_CONTINUATION_MARK) {
+
+                        /* The whole range is made up of variants */
+                        extras = (range_max - 1) - (range_min + 1) + 1;
+                    }
+                    else if (range_max >= UTF_CONTINUATION_MARK) {
+
+                        /* Only the higher portion of the range is variants */
+                        extras = (range_max - 1) - UTF_CONTINUATION_MARK + 1;
+                    }
+
+                    utf8_variant_count += extras;
                 }
 
-                /* Subtract 3 for the bytes that were already accounted for
-                 * (min, max, and the hyphen) */
-                d = save_offset + SvGROW(sv, SvLEN(sv) + grow - 3);
+                /* The base growth is the number of code points in the range,
+                 * not including the endpoints, which have already been sized
+                 * for (and output).  We don't subtract for the hyphen, as it
+                 * has been parsed but not output, and the SvGROW below is
+                 * based only on what's been output plus what's left to parse.
+                 * */
+                grow = (range_max - 1) - (range_min + 1) + 1;
 
+                if (has_utf8) {
 #ifdef EBCDIC
-                /* Here, we expand out the range. */
+                    /* In some cases in EBCDIC, we haven't yet calculated a
+                     * precise amount needed for the UTF-8 variants.  Just
+                     * assume the worst case, that everything will expand by a
+                     * byte */
+                    if (! convert_unicode) {
+                        grow *= 2;
+                    }
+                    else
+#endif
+                    {
+                        /* Otherwise we know exactly how many variants there
+                         * are in the range. */
+                        grow += extras;
+                    }
+                }
+
+                /* Grow, but position the output to overwrite the range min end
+                 * point, because in some cases we overwrite that */
+                SvCUR_set(sv, d - SvPVX_const(sv));
+                offset_to_min = min_ptr - SvPVX_const(sv);
+
+                /* See Note on sizing above. */
+                d = offset_to_min + SvGROW(sv, SvCUR(sv)
+                                             + (send - s)
+                                             + grow
+                                             + 1 /* Trailing NUL */ );
+
+                /* Now, we can expand out the range. */
+#ifdef EBCDIC
                 if (convert_unicode) {
-                    IV i;
+                    SSize_t i;
 
                     /* Recall that the min and max are now in Unicode terms, so
                      * we have to convert each character to its native
                      * equivalent */
                     if (has_utf8) {
                         for (i = range_min; i <= range_max; i++) {
-                            append_utf8_from_native_byte(LATIN1_TO_NATIVE((U8) i),
-                                                         (U8 **) &d);
+                            append_utf8_from_native_byte(
+                                                    LATIN1_TO_NATIVE((U8) i),
+                                                    (U8 **) &d);
                         }
                     }
                     else {
@@ -3174,7 +3240,7 @@ S_scan_const(pTHX_ char *start)
 #endif
                 /* Always gets run for ASCII, and sometimes for EBCDIC. */
                 {
-                    IV i;
+                    SSize_t i;
 
                     /* Here, no conversions are necessary, which means that the
                      * first character in the range is already in 'd' and
@@ -3187,21 +3253,38 @@ S_scan_const(pTHX_ char *start)
                     }
                     else {
                         d++;
-                        for (i = range_min + 1; i <= range_max; i++) {
+                        assert(range_min + 1 <= range_max);
+                        for (i = range_min + 1; i < range_max; i++) {
+#ifdef EBCDIC
+                            /* In this case on EBCDIC, we haven't calculated
+                             * the variants.  Do it here, as we go along */
+                            if (! UVCHR_IS_INVARIANT(i)) {
+                                utf8_variant_count++;
+                            }
+#endif
                             *d++ = (char)i;
                         }
+
+                        /* The range_max is done outside the loop so as to
+                         * avoid having to special case not incrementing
+                         * 'utf8_variant_count' on EBCDIC (it's already been
+                         * counted when originally parsed) */
+                        *d++ = (char) range_max;
 		    }
 		}
 
 #ifdef EBCDIC
-                /* If the original range extended above 255, add in that portion. */
+                /* If the original range extended above 255, add in that
+                 * portion. */
                 if (real_range_max) {
                     *d++ = (char) UTF8_TWO_BYTE_HI(0x100);
                     *d++ = (char) UTF8_TWO_BYTE_LO(0x100);
-                    if (real_range_max > 0x101)
-                        *d++ = (char) ILLEGAL_UTF8_BYTE;
-                    if (real_range_max > 0x100)
+                    if (real_range_max > 0x100) {
+                        if (real_range_max > 0x101) {
+                            *d++ = (char) ILLEGAL_UTF8_BYTE;
+                        }
                         d = (char*)uvchr_to_utf8((U8*)d, real_range_max);
+                    }
                 }
 #endif
 
@@ -3232,11 +3315,9 @@ S_scan_const(pTHX_ char *start)
 	    if (!esc)
 		in_charclass = FALSE;
 	}
-
-	/* skip for regexp comments /(?#comment)/, except for the last
-	 * char, which will be done separately.
-	 * Stop on (?{..}) and friends */
-
+            /* skip for regexp comments /(?#comment)/, except for the last
+             * char, which will be done separately.  Stop on (?{..}) and
+             * friends */
 	else if (*s == '(' && PL_lex_inpat && s[1] == '?' && !in_charclass) {
 	    if (s[2] == '#') {
 		while (s+1 < send && *s != ')')
@@ -3249,8 +3330,7 @@ S_scan_const(pTHX_ char *start)
 		break;
 	    }
 	}
-
-	/* likewise skip #-initiated comments in //x patterns */
+            /* likewise skip #-initiated comments in //x patterns */
 	else if (*s == '#'
                  && PL_lex_inpat
                  && !in_charclass
@@ -3259,14 +3339,13 @@ S_scan_const(pTHX_ char *start)
 	    while (s < send && *s != '\n')
 		*d++ = *s++;
 	}
-
-	/* no further processing of single-quoted regex */
+            /* no further processing of single-quoted regex */
 	else if (PL_lex_inpat && SvIVX(PL_linestr) == '\'')
 	    goto default_action;
 
-	/* check for embedded arrays
-	   (@foo, @::foo, @'foo, @{foo}, @$foo, @+, @-)
-	   */
+            /* check for embedded arrays
+             * (@foo, @::foo, @'foo, @{foo}, @$foo, @+, @-)
+             */
 	else if (*s == '@' && s[1]) {
 	    if (UTF
                ? isIDFIRST_utf8_safe(s+1, send)
@@ -3279,10 +3358,8 @@ S_scan_const(pTHX_ char *start)
 	    if (!PL_lex_inpat && (s[1] == '+' || s[1] == '-'))
 		break; /* in regexp, neither @+ nor @- are interpolated */
 	}
-
-	/* check for embedded scalars.  only stop if we're sure it's a
-	   variable.
-        */
+            /* check for embedded scalars.  only stop if we're sure it's a
+             * variable.  */
 	else if (*s == '$') {
 	    if (!PL_lex_inpat)	/* not a regexp, so $ must be var */
 		break;
@@ -3391,7 +3468,7 @@ S_scan_const(pTHX_ char *start)
                                                UTF);
 		    if (! valid) {
 			yyerror(error);
-			continue;
+			uv = 0; /* drop through to ensure range ends are set */
 		    }
 		    goto NUM_ESCAPE_INSERT;
 		}
@@ -3409,13 +3486,13 @@ S_scan_const(pTHX_ char *start)
                                                UTF);
 		    if (! valid) {
 			yyerror(error);
-			continue;
+			uv = 0; /* drop through to ensure range ends are set */
 		    }
 		}
 
 	      NUM_ESCAPE_INSERT:
 		/* Insert oct or hex escaped character. */
-		
+
 		/* Here uv is the ordinal of the next character being added */
 		if (UVCHR_IS_INVARIANT(uv)) {
 		    *d++ = (char) uv;
@@ -7031,7 +7108,7 @@ Perl_yylex(pTHX)
 		if (tmp == KEY_dump) {
 		    Perl_ck_warner_d(aTHX_ packWARN2(WARN_MISC,WARN_DEPRECATED),
 				     "dump() better written as CORE::dump(). "
-                                     "dump() will no longer be available " 
+                                     "dump() will no longer be available "
                                      "in Perl 5.30");
 		}
 		gv = NULL;
@@ -7717,7 +7794,7 @@ Perl_yylex(pTHX)
 
 	case KEY_exists:
 	    UNI(OP_EXISTS);
-	
+
 	case KEY_exit:
 	    UNI(OP_EXIT);
 
@@ -7953,7 +8030,7 @@ Perl_yylex(pTHX)
 
 	case KEY_last:
 	    LOOPX(OP_LAST);
-	
+
 	case KEY_lc:
 	    UNI(OP_LC);
 
@@ -8133,7 +8210,7 @@ Perl_yylex(pTHX)
 
 	case KEY_pos:
 	    UNIDOR(OP_POS);
-	
+
 	case KEY_pack:
 	    LOP(OP_PACK,XTERM);
 
@@ -8321,7 +8398,7 @@ Perl_yylex(pTHX)
 
 	case KEY_chomp:
 	    UNI(OP_CHOMP);
-	
+
 	case KEY_scalar:
 	    UNI(OP_SCALAR);
 
@@ -8961,7 +9038,7 @@ S_new_constant(pTHX_ const char *s, STRLEN len, const char *key, STRLEN keylen,
 	|| ! SvOK(*cvp))
     {
 	char *msg;
-	
+
 	/* Here haven't found what we're looking for.  If it is charnames,
 	 * perhaps it needs to be loaded.  Try doing that before giving up */
 	if (*key == 'c') {
@@ -10291,7 +10368,7 @@ S_scan_inputsymbol(pTHX_ char *start)
 	($*@)		sub prototypes		sub foo ($)
 	(stuff)		sub attr parameters	sub foo : attr(stuff)
 	<>		readline or globs	<FOO>, <>, <$fh>, or <*.c>
-	
+
    In most of these cases (all but <>, patterns and transliterate)
    yylex() calls scan_str().  m// makes yylex() call scan_pat() which
    calls scan_str().  s/// makes yylex() call scan_subst() which calls
@@ -10454,7 +10531,7 @@ S_scan_str(pTHX_ char *start, int keep_bracketed_quoted, int keep_delims, int re
 		*to = *s;
 	    }
 	}
-	
+
 	/* if the terminator isn't the same as the start character (e.g.,
 	   matched brackets), we have to allow more in the quoting, and
 	   be prepared for nested brackets.
@@ -10512,7 +10589,7 @@ S_scan_str(pTHX_ char *start, int keep_bracketed_quoted, int keep_delims, int re
 	else if (to - SvPVX_const(sv) == 1 && to[-1] == '\r')
 	    to[-1] = '\n';
 #endif
-	
+
 	/* if we're out of file, or a read fails, bail and reset the current
 	   line marker so we can report where the unterminated string began
 	*/
