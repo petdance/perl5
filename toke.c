@@ -669,7 +669,7 @@ S_cr_textfilter(pTHX_ int idx, SV *sv, int maxlen)
 Creates and initialises a new lexer/parser state object, supplying
 a context in which to lex and parse from a new source of Perl code.
 A pointer to the new state object is placed in L</PL_parser>.  An entry
-is made on the save stack so that upon unwinding the new state object
+is made on the save stack so that upon unwinding, the new state object
 will be destroyed and the former value of L</PL_parser> will be restored.
 Nothing else need be done to clean up the parsing context.
 
@@ -701,6 +701,8 @@ Perl_lex_start(pTHX_ SV *line, PerlIO *rsfp, U32 flags)
 {
     const char *s = NULL;
     yy_parser *parser, *oparser;
+    const U8* first_bad_char_loc;
+
     if (flags && flags & ~LEX_START_FLAGS)
 	Perl_croak(aTHX_ "Lexing code internal error (%s)", "lex_start");
 
@@ -743,6 +745,18 @@ Perl_lex_start(pTHX_ SV *line, PerlIO *rsfp, U32 flags)
     if (line) {
 	STRLEN len;
 	s = SvPV_const(line, len);
+
+        if (SvUTF8(line) && ! is_utf8_string_loc((U8 *) s,
+                                                 SvCUR(line),
+                                                 &first_bad_char_loc))
+        {
+            _force_out_malformed_utf8_message(first_bad_char_loc,
+                                              (U8 *) s + SvCUR(line),
+                                              0,
+                                              1 /* 1 means die */ );
+            NOT_REACHED; /* NOTREACHED */
+        }
+
 	parser->linestr = flags & LEX_START_COPIED
 			    ? SvREFCNT_inc_simple_NN(line)
 			    : newSVpvn_flags(s, len, SvUTF8(line));

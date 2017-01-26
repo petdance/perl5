@@ -837,7 +837,7 @@ use File::Glob qw(:case);
     },
 
     'Module::CoreList' => {
-        'DISTRIBUTION' => 'BINGOS/Module-CoreList-5.20161220.tar.gz',
+        'DISTRIBUTION' => 'BINGOS/Module-CoreList-5.20170120.tar.gz',
         'FILES'        => q[dist/Module-CoreList],
     },
 
@@ -1011,6 +1011,7 @@ use File::Glob qw(:case);
             'lib/Sub/Util.pm',     # CPAN RT 118470
             't/lln.t',             # CPAN RT 118470
             't/uniq.t',            # CPAN RT 118470
+            't/tainted.t',         # CPAN RT 119169
         ],
     },
 
