@@ -2143,7 +2143,7 @@ Perl_str_to_version(pTHX_ SV *sv)
     STRLEN len;
     const char *start = SvPV_const(sv,len);
     const char * const end = start + len;
-    const bool utf = SvUTF8(sv) ? TRUE : FALSE;
+    const bool utf = cBOOL(SvUTF8(sv));
 
     PERL_ARGS_ASSERT_STR_TO_VERSION;
 
@@ -4276,11 +4276,14 @@ S_intuit_method(pTHX_ char *start, SV *ioname, CV *cv)
     }
 
     if (*start == '$') {
+        SSize_t start_off = start - SvPVX(PL_linestr);
 	if (cv || PL_last_lop_op == OP_PRINT || PL_last_lop_op == OP_SAY
             || isUPPER(*PL_tokenbuf))
 	    return 0;
-	s = skipspace(s);
-	PL_bufptr = start;
+        /* this could be $# */
+        if (isSPACE(*s))
+            s = skipspace(s);
+	PL_bufptr = SvPVX(PL_linestr) + start_off;
 	PL_expect = XREF;
 	return *s == '(' ? FUNCMETH : METHOD;
     }
@@ -5217,7 +5220,7 @@ Perl_yylex(pTHX)
 	}
 	do {
 	    fake_eof = 0;
-	    bof = PL_rsfp ? TRUE : FALSE;
+	    bof = cBOOL(PL_rsfp);
 	    if (0) {
 	      fake_eof:
 		fake_eof = LEX_FAKE_EOF;
@@ -7260,17 +7263,24 @@ Perl_yylex(pTHX)
                                                                == OA_FILEREF))
 		{
 		    bool immediate_paren = *s == '(';
+                    SSize_t s_off;
 
 		    /* (Now we can afford to cross potential line boundary.) */
 		    s = skipspace(s);
 
+                    /* intuit_method() can indirectly call lex_next_chunk(),
+                     * invalidating s
+                     */
+                    s_off = s - SvPVX(PL_linestr);
 		    /* Two barewords in a row may indicate method call. */
 	            if (   (   isIDFIRST_lazy_if_safe(s, PL_bufend, UTF)
                             || *s == '$')
                         && (tmp = intuit_method(s, lex ? NULL : sv, cv)))
                     {
+                        /* the code at method: doesn't use s */
 			goto method;
 		    }
+                    s = SvPVX(PL_linestr) + s_off;
 
 		    /* If not a declared subroutine, it's an indirect object. */
 		    /* (But it's an indir obj regardless for sort.) */
@@ -10412,7 +10422,7 @@ S_scan_str(pTHX_ char *start, int keep_bracketed_quoted, int keep_delims, int re
     const char * non_grapheme_msg = "Use of unassigned code point or"
                                     " non-standalone grapheme for a delimiter"
                                     " will be a fatal error starting in Perl"
-                                    " v5.30";
+                                    " 5.30";
     /* The only non-UTF character that isn't a stand alone grapheme is
      * white-space, hence can't be a delimiter.  So can skip for non-UTF-8 */
     bool check_grapheme = UTF && ckWARN_d(WARN_DEPRECATED);

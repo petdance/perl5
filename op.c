@@ -994,8 +994,9 @@ Perl_op_clear(pTHX_ OP *o)
 	/* FALLTHROUGH */
     case OP_TRANS:
     case OP_TRANSR:
-	if (o->op_private & (OPpTRANS_FROM_UTF|OPpTRANS_TO_UTF)) {
-	    assert(o->op_type == OP_TRANS || o->op_type == OP_TRANSR);
+	if (   (o->op_type == OP_TRANS || o->op_type == OP_TRANSR)
+            && (o->op_private & (OPpTRANS_FROM_UTF|OPpTRANS_TO_UTF)))
+        {
 #ifdef USE_ITHREADS
 	    if (cPADOPo->op_padix > 0) {
 		pad_swipe(cPADOPo->op_padix, TRUE);
@@ -14446,8 +14447,9 @@ Perl_rpeep(pTHX_ OP *o)
                       && (  kid->op_targ == OP_NEXTSTATE
                          || kid->op_targ == OP_DBSTATE  ))
                     || kid->op_type == OP_STUB
-                    || kid->op_type == OP_ENTER);
-                nullop->op_next = kLISTOP->op_next;
+                    || kid->op_type == OP_ENTER
+                    || (PL_parser && PL_parser->error_count));
+                nullop->op_next = kid->op_next;
                 DEFER(nullop->op_next);
 	    }
 

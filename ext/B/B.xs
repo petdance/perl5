@@ -1791,7 +1791,7 @@ is_empty(gv)
 	isGV_with_GP = 1
     CODE:
 	if (ix) {
-	    RETVAL = isGV_with_GP(gv) ? TRUE : FALSE;
+	    RETVAL = cBOOL(isGV_with_GP(gv));
 	} else {
             RETVAL = GvGP(gv) == Null(GP*);
 	}
@@ -2064,7 +2064,7 @@ SV*
 HASH(h)
 	B::RHE h
     CODE:
-	RETVAL = newRV( (SV*)cophh_2hv(h, 0) );
+	RETVAL = newRV_noinc( (SV*)cophh_2hv(h, 0) );
     OUTPUT:
 	RETVAL
 

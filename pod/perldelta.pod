@@ -204,7 +204,10 @@ XXX Changes (i.e. rewording) of diagnostic messages go here
 
 =item *
 
-XXX Describe change here
+Use of unassigned code point or non-standalone grapheme for a delimiter will be a fatal error starting in Perl 5.30
+
+This was changed to drop a leading C<v> in C<v5.30>, so it uses the same
+style as other deprecation messages.
 
 =back
 
@@ -323,7 +326,18 @@ well.
 
 =item *
 
-XXX
+The C<op_class()> API function has been added. This is like the existing
+C<OP_CLASS()> macro, but can more accurately determine what struct an op
+has been allocated as. For example C<OP_CLASS()> might return
+C<OA_BASEOP_OR_UNOP> indicating that ops of this type are usually
+allocated as an C<OP> or C<UNOP>; while <op_class()> will return
+C<OPclass_BASEOP> or C<OPclass_UNOP> as appropriate.
+
+=item *
+
+The output format of the C<op_dump()> function (as used by C<perl -Dx>)
+has changed: it now displays an "ASCII-art" tree structure, and shows more
+low-level details about each op, such as its address and class.
 
 =back
 
@@ -338,7 +352,15 @@ files in F<ext/> and F<lib/> are best summarized in L</Modules and Pragmata>.
 
 =item *
 
-XXX
+Attempting to use the deprecated variable C<$#> as the object in an
+indirect object method call could cause a heap use after free or
+buffer overflow.  [perl #129274]
+
+=item *
+
+When checking for an indirect object method call in some rare cases
+the parser could reallocate the line buffer but then continue to use
+pointers to the old buffer.  [perl #129190]
 
 =back
 
