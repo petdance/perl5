@@ -7789,6 +7789,18 @@ Perl_re_op_compile(pTHX_ SV ** const patternp, int pat_count,
 
     while ( RExC_recurse_count > 0 ) {
         const regnode *scan = RExC_recurse[ --RExC_recurse_count ];
+        /*
+         * This data structure is set up in study_chunk() and is used
+         * to calculate the distance between a GOSUB regopcode and
+         * the OPEN/CURLYM (CURLYM's are special and can act like OPEN's)
+         * it refers to.
+         *
+         * If for some reason someone writes code that optimises
+         * away a GOSUB opcode then the assert should be changed to
+         * an if(scan) to guard the ARG2L_SET() - Yves
+         *
+         */
+        assert(scan && OP(scan) == GOSUB);
         ARG2L_SET( scan, RExC_open_parens[ARG(scan)] - scan );
     }
 
@@ -11709,19 +11721,11 @@ S_regpiece(pTHX_ RExC_state_t *pRExC_state, I32 *flagp, U32 depth)
 	    nextchar(pRExC_state);
             if (max < min) {    /* If can't match, warn and optimize to fail
                                    unconditionally */
-                if (SIZE_ONLY) {
-
-                    /* We can't back off the size because we have to reserve
-                     * enough space for all the things we are about to throw
-                     * away, but we can shrink it by the amount we are about
-                     * to re-use here */
-                    RExC_size += PREVOPER(RExC_size) - regarglen[(U8)OPFAIL];
-                }
-                else {
+                reginsert(pRExC_state, OPFAIL, orig_emit, depth+1);
+                if (PASS2) {
                     ckWARNreg(RExC_parse, "Quantifier {n,m} with n > m can't match");
-                    RExC_emit = orig_emit;
+                    NEXT_OFF(orig_emit)= regarglen[OPFAIL] + NODE_STEP_REGNODE;
                 }
-                ret = reganode(pRExC_state, OPFAIL, 0);
                 return ret;
             }
             else if (min == max && *RExC_parse == '?')
@@ -18499,9 +18503,17 @@ S_reg2Lanode(pTHX_ RExC_state_t *pRExC_state, const U8 op, const U32 arg1, const
 - reginsert - insert an operator in front of already-emitted operand
 *
 * Means relocating the operand.
+*
+* IMPORTANT NOTE - it is the *callers* responsibility to correctly
+* set up NEXT_OFF() of the inserted node if needed. Something like this:
+*
+* reginsert(pRExC, OPFAIL, orig_emit, depth+1);
+* if (PASS2)
+*     NEXT_OFF(orig_emit) = regarglen[OPFAIL] + NODE_STEP_REGNODE;
+*
 */
 STATIC void
-S_reginsert(pTHX_ RExC_state_t *pRExC_state, U8 op, regnode *opnd, U32 depth)
+S_reginsert(pTHX_ RExC_state_t *pRExC_state, U8 op, regnode *operand, U32 depth)
 {
     regnode *src;
     regnode *dst;
@@ -18535,13 +18547,13 @@ S_reginsert(pTHX_ RExC_state_t *pRExC_state, U8 op, regnode *opnd, U32 depth)
             /* note, RExC_open_parens[0] is the start of the
              * regex, it can't move. RExC_close_parens[0] is the end
              * of the regex, it *can* move. */
-            if ( paren && RExC_open_parens[paren] >= opnd ) {
+            if ( paren && RExC_open_parens[paren] >= operand ) {
                 /*DEBUG_PARSE_FMT("open"," - %d",size);*/
                 RExC_open_parens[paren] += size;
             } else {
                 /*DEBUG_PARSE_FMT("open"," - %s","ok");*/
             }
-            if ( RExC_close_parens[paren] >= opnd ) {
+            if ( RExC_close_parens[paren] >= operand ) {
                 /*DEBUG_PARSE_FMT("close"," - %d",size);*/
                 RExC_close_parens[paren] += size;
             } else {
@@ -18552,7 +18564,7 @@ S_reginsert(pTHX_ RExC_state_t *pRExC_state, U8 op, regnode *opnd, U32 depth)
     if (RExC_end_op)
         RExC_end_op += size;
 
-    while (src > opnd) {
+    while (src > operand) {
 	StructCopy(--src, --dst, regnode);
 #ifdef RE_TRACK_PATTERN_OFFSETS
         if (RExC_offsets) {     /* MJD 20010112 */
@@ -18573,7 +18585,7 @@ S_reginsert(pTHX_ RExC_state_t *pRExC_state, U8 op, regnode *opnd, U32 depth)
     }
 
 
-    place = opnd;		/* Op node, where operand used to be. */
+    place = operand;		/* Op node, where operand used to be. */
 #ifdef RE_TRACK_PATTERN_OFFSETS
     if (RExC_offsets) {         /* MJD */
 	MJD_OFFSET_DEBUG(
