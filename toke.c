@@ -2866,8 +2866,6 @@ S_scan_const(pTHX_ char *start)
     bool didrange = FALSE;              /* did we just finish a range? */
     bool in_charclass = FALSE;          /* within /[...]/ */
     bool has_utf8 = FALSE;              /* Output constant is UTF8 */
-    bool has_above_latin1 = FALSE;      /* does something require special
-                                           handling in tr/// ? */
     bool  this_utf8 = cBOOL(UTF);       /* Is the source string assumed to be
                                            UTF8?  But, this can show as true
                                            when the source isn't utf8, as for
@@ -2881,6 +2879,14 @@ S_scan_const(pTHX_ char *start)
     SV *res;		                /* result from charnames */
     STRLEN offset_to_max;   /* The offset in the output to where the range
                                high-end character is temporarily placed */
+
+    /* Does something require special handling in tr/// ?  This avoids extra
+     * work in a less likely case.  As such, khw didn't feel it was worth
+     * adding any branches to the more mainline code to handle this, which
+     * means that this doesn't get set in some circumstances when things like
+     * \x{100} get expanded out.  As a result there needs to be extra testing
+     * done in the tr code */
+    bool has_above_latin1 = FALSE;
 
     /* Note on sizing:  The scanned constant is placed into sv, which is
      * initialized by newSV() assuming one byte of output for every byte of
@@ -2962,7 +2968,7 @@ S_scan_const(pTHX_ char *start)
                     /* The tests here for being above Latin1 and similar ones
                      * in the following 'else' suffice to find all such
                      * occurences in the constant, except those added by a
-                     * backslash escape sequence, like \x{100}.  And all those
+                     * backslash escape sequence, like \x{100}.  Mostly, those
                      * set 'has_above_latin1' as appropriate */
                     if (this_utf8 && UTF8_IS_ABOVE_LATIN1(*s)) {
                         has_above_latin1 = TRUE;
@@ -3026,6 +3032,13 @@ S_scan_const(pTHX_ char *start)
                     min_ptr = (char*) utf8_hop( (U8*) max_ptr, -1);
                     range_min = valid_utf8_to_uvchr( (U8*) min_ptr, NULL);
                     range_max = valid_utf8_to_uvchr( (U8*) max_ptr, NULL);
+
+                    /* This compensates for not all code setting
+                     * 'has_above_latin1', so that we don't skip stuff that
+                     * should be executed */
+                    if (range_max > 255) {
+                        has_above_latin1 = TRUE;
+                    }
                 }
                 else {
                     min_ptr = max_ptr - 1;
@@ -4166,7 +4179,7 @@ S_intuit_more(pTHX_ char *s)
 		weight -= seen[un_char] * 10;
 	        if (isWORDCHAR_lazy_if_safe(s+1, PL_bufend, UTF)) {
 		    int len;
-		    scan_ident(s, send, tmpbuf, sizeof tmpbuf, FALSE);
+		    scan_ident(s, tmpbuf, sizeof tmpbuf, FALSE);
 		    len = (int)strlen(tmpbuf);
 		    if (len > 1 && gv_fetchpvn_flags(tmpbuf, len,
                                                     UTF ? SVf_UTF8 : 0, SVt_PV))
@@ -5690,7 +5703,7 @@ Perl_yylex(pTHX)
     case '*':
 	if (PL_expect == XPOSTDEREF) POSTDEREF('*');
 	if (PL_expect != XOPERATOR) {
-	    s = scan_ident(s, PL_bufend, PL_tokenbuf, sizeof PL_tokenbuf, TRUE);
+	    s = scan_ident(s, PL_tokenbuf, sizeof PL_tokenbuf, TRUE);
 	    PL_expect = XOPERATOR;
 	    force_ident(PL_tokenbuf, '*');
 	    if (!*PL_tokenbuf)
@@ -5733,8 +5746,7 @@ Perl_yylex(pTHX)
 	}
 	else if (PL_expect == XPOSTDEREF) POSTDEREF('%');
 	PL_tokenbuf[0] = '%';
-	s = scan_ident(s, PL_bufend, PL_tokenbuf + 1,
-		sizeof PL_tokenbuf - 1, FALSE);
+	s = scan_ident(s, PL_tokenbuf + 1, sizeof PL_tokenbuf - 1, FALSE);
 	pl_yylval.ival = 0;
 	if (!PL_tokenbuf[1]) {
 	    PREREF('%');
@@ -6280,8 +6292,7 @@ Perl_yylex(pTHX)
 	}
 
 	PL_tokenbuf[0] = '&';
-	s = scan_ident(s - 1, PL_bufend, PL_tokenbuf + 1,
-		       sizeof PL_tokenbuf - 1, TRUE);
+	s = scan_ident(s - 1, PL_tokenbuf + 1, sizeof PL_tokenbuf - 1, TRUE);
 	pl_yylval.ival = (OPpENTERSUB_AMPER<<8);
 	if (PL_tokenbuf[1]) {
 	    force_ident_maybe_lex('&');
@@ -6543,7 +6554,7 @@ Perl_yylex(pTHX)
                 || strchr("{$:+-@", s[2])))
         {
 	    PL_tokenbuf[0] = '@';
-	    s = scan_ident(s + 1, PL_bufend, PL_tokenbuf + 1,
+	    s = scan_ident(s + 1, PL_tokenbuf + 1,
 			   sizeof PL_tokenbuf - 1, FALSE);
             if (PL_expect == XOPERATOR) {
                 d = s;
@@ -6561,8 +6572,7 @@ Perl_yylex(pTHX)
 	}
 
 	PL_tokenbuf[0] = '$';
-	s = scan_ident(s, PL_bufend, PL_tokenbuf + 1,
-		       sizeof PL_tokenbuf - 1, FALSE);
+	s = scan_ident(s, PL_tokenbuf + 1, sizeof PL_tokenbuf - 1, FALSE);
 	if (PL_expect == XOPERATOR) {
 	    d = s;
 	    if (PL_bufptr > s) {
@@ -6697,7 +6707,7 @@ Perl_yylex(pTHX)
         if (PL_expect == XPOSTDEREF)
             POSTDEREF('@');
 	PL_tokenbuf[0] = '@';
-	s = scan_ident(s, PL_bufend, PL_tokenbuf + 1, sizeof PL_tokenbuf - 1, FALSE);
+	s = scan_ident(s, PL_tokenbuf + 1, sizeof PL_tokenbuf - 1, FALSE);
 	if (PL_expect == XOPERATOR) {
             d = s;
             if (PL_bufptr > s) {
@@ -9257,7 +9267,7 @@ S_scan_word(pTHX_ char *s, char *dest, STRLEN destlen, int allow_package, STRLEN
                             && LIKELY((U8) *(s) != LATIN1_TO_NATIVE(0xAD)))))
 
 STATIC char *
-S_scan_ident(pTHX_ char *s, const char *send, char *dest, STRLEN destlen, I32 ck_uni)
+S_scan_ident(pTHX_ char *s, char *dest, STRLEN destlen, I32 ck_uni)
 {
     I32 herelines = PL_parser->herelines;
     SSize_t bracket = -1;
@@ -10536,6 +10546,7 @@ S_scan_str(pTHX_ char *start, int keep_bracketed_quoted, int keep_delims, int re
 		    if (termlen == 1)
 			break;
 		    if (s+termlen <= PL_bufend && memEQ(s, (char*)termstr, termlen))
+                    {
                         if (   check_grapheme
                             && UNLIKELY(! _is_grapheme((U8 *) start,
                                                               (U8 *) s,
@@ -10546,6 +10557,7 @@ S_scan_str(pTHX_ char *start, int keep_bracketed_quoted, int keep_delims, int re
                                         "%s", non_grapheme_msg);
                         }
 			break;
+                    }
 		}
 		else if (!has_utf8 && !UTF8_IS_INVARIANT((U8)*s) && UTF)
 		    has_utf8 = TRUE;
