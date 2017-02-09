@@ -951,16 +951,7 @@ Perl_fbm_instr(pTHX_ unsigned char *big, unsigned char *bigend, SV *littlestr, U
 	char * const b = ninstr((char*)big,(char*)bigend,
 			 (char*)little, (char*)little + littlelen);
 
-	if (!b && tail) {	/* Automatically multiline!  */
-	    /* Chop \n from littlestr: */
-	    s = bigend - littlelen + 1;
-	    if (*s == *little
-		&& memEQ((char*)s + 1, (char*)little + 1, littlelen - 2))
-	    {
-		return (char*)s;
-	    }
-	    return NULL;
-	}
+        assert(!tail); /* valid => FBM; tail only set on SvVALID SVs */
 	return b;
     }
 
@@ -5247,8 +5238,11 @@ Perl_my_snprintf(char *buffer, const Size_t len, const char *format, ...)
         if (qfmt) {
             /* If the format looked promising, use it as quadmath. */
             retval = quadmath_snprintf(buffer, len, qfmt, va_arg(ap, NV));
-            if (retval == -1)
+            if (retval == -1) {
+                if (qfmt != format)
+                    SAVEFREEPV(qfmt);
                 Perl_croak_nocontext("panic: quadmath_snprintf failed, format \"%s\"", qfmt);
+            }
             quadmath_valid = TRUE;
             if (qfmt != format)
                 Safefree(qfmt);
