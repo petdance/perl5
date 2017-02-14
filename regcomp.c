@@ -818,13 +818,6 @@ static const scan_data_t zero_scan_data =
                                        REPORT_LOCATION_ARGS(loc));      \
 } STMT_END
 
-#define	vWARN4dep(loc, m, a1, a2, a3) STMT_START {			       \
-    __ASSERT_(PASS2) Perl_warner(aTHX_ packWARN2(WARN_REGEXP,WARN_DEPRECATED), \
-                                       m REPORT_LOCATION,                      \
-	                               a1, a2, a3,                             \
-                                       REPORT_LOCATION_ARGS(loc));             \
-} STMT_END
-
 #define	ckWARN4reg(loc, m, a1, a2, a3) STMT_START {			\
     __ASSERT_(PASS2) Perl_ck_warner(aTHX_ packWARN(WARN_REGEXP),        \
                                           m REPORT_LOCATION,            \
@@ -6193,7 +6186,9 @@ S_pat_upgrade_to_utf8(pTHX_ RExC_state_t * const pRExC_state,
 
     while (s < *plen_p) {
         append_utf8_from_native_byte(src[s], &d);
+
         if (n < num_code_blocks) {
+            assert(pRExC_state->code_blocks);
             if (!do_end && pRExC_state->code_blocks->cb[n].start == s) {
                 pRExC_state->code_blocks->cb[n].start = d - dst - 1;
                 assert(*(d - 1) == '(');
@@ -10261,7 +10256,7 @@ S__make_exactf_invlist(pTHX_ RExC_state_t *pRExC_state, regnode *node)
             {
                 AV* list = (AV*) *listp;
                 IV k;
-                for (k = 0; k <= av_tindex_nomg(list); k++) {
+                for (k = 0; k <= av_tindex_skip_len_mg(list); k++) {
                     SV** c_p = av_fetch(list, k, FALSE);
                     UV c;
                     assert(c_p);
@@ -14878,7 +14873,7 @@ S_handle_regex_sets(pTHX_ RExC_state_t *pRExC_state, SV** return_invlist,
       no_close:
         /* We output the messages even if warnings are off, because we'll fail
          * the very next thing, and these give a likely diagnosis for that */
-        if (posix_warnings && av_tindex_nomg(posix_warnings) >= 0) {
+        if (posix_warnings && av_tindex_skip_len_mg(posix_warnings) >= 0) {
             output_or_return_posix_warnings(pRExC_state, posix_warnings, NULL);
         }
 
@@ -14993,7 +14988,7 @@ redo_curchar:
                                            stack, fence, fence_stack));
 #endif
 
-        top_index = av_tindex_nomg(stack);
+        top_index = av_tindex_skip_len_mg(stack);
 
         switch (curchar) {
             SV** stacked_ptr;       /* Ptr to something already on 'stack' */
@@ -15171,7 +15166,7 @@ redo_curchar:
                 goto done;
 
             case ')':
-                if (av_tindex_nomg(fence_stack) < 0) {
+                if (av_tindex_skip_len_mg(fence_stack) < 0) {
                     RExC_parse++;
                     vFAIL("Unexpected ')'");
                 }
@@ -15367,7 +15362,7 @@ redo_curchar:
              * may have altered the stack in the time since we earlier set
              * 'top_index'.  */
 
-            top_index = av_tindex_nomg(stack);
+            top_index = av_tindex_skip_len_mg(stack);
             if (top_index - fence >= 0) {
                 /* If the top entry on the stack is an operator, it had better
                  * be a '!', otherwise the entry below the top operand should
@@ -15418,15 +15413,15 @@ redo_curchar:
     } /* End of loop parsing through the construct */
 
   done:
-    if (av_tindex_nomg(fence_stack) >= 0) {
+    if (av_tindex_skip_len_mg(fence_stack) >= 0) {
         vFAIL("Unmatched (");
     }
 
-    if (av_tindex_nomg(stack) < 0   /* Was empty */
+    if (av_tindex_skip_len_mg(stack) < 0   /* Was empty */
         || ((final = av_pop(stack)) == NULL)
         || ! IS_OPERAND(final)
         || SvTYPE(final) != SVt_INVLIST
-        || av_tindex_nomg(stack) >= 0)  /* More left on stack */
+        || av_tindex_skip_len_mg(stack) >= 0)  /* More left on stack */
     {
       bad_syntax:
         SvREFCNT_dec(final);
@@ -15529,8 +15524,8 @@ S_dump_regex_sets_structures(pTHX_ RExC_state_t *pRExC_state,
                              AV * stack, const IV fence, AV * fence_stack)
 {   /* Dumps the stacks in handle_regex_sets() */
 
-    const SSize_t stack_top = av_tindex_nomg(stack);
-    const SSize_t fence_stack_top = av_tindex_nomg(fence_stack);
+    const SSize_t stack_top = av_tindex_skip_len_mg(stack);
+    const SSize_t fence_stack_top = av_tindex_skip_len_mg(fence_stack);
     SSize_t i;
 
     PERL_ARGS_ASSERT_DUMP_REGEX_SETS_STRUCTURES;
@@ -15984,7 +15979,7 @@ S_regclass(pTHX_ RExC_state_t *pRExC_state, I32 *flagp, U32 depth,
     while (1) {
 
         if (   posix_warnings
-            && av_tindex_nomg(posix_warnings) >= 0
+            && av_tindex_skip_len_mg(posix_warnings) >= 0
             && RExC_parse > not_posix_region_end)
         {
             /* Warnings about posix class issues are considered tentative until
@@ -16040,7 +16035,7 @@ S_regclass(pTHX_ RExC_state_t *pRExC_state, I32 *flagp, U32 depth,
                  * posix class, and it failed, it was a false alarm, as this
                  * successful one proves */
                 if (   posix_warnings
-                    && av_tindex_nomg(posix_warnings) >= 0
+                    && av_tindex_skip_len_mg(posix_warnings) >= 0
                     && not_posix_region_end >= RExC_parse
                     && not_posix_region_end <= posix_class_end)
                 {
@@ -16931,22 +16926,20 @@ S_regclass(pTHX_ RExC_state_t *pRExC_state, I32 *flagp, U32 depth,
                     literal[d++] = (char) value;
                     literal[d++] = '\0';
 
-                    vWARN4dep(RExC_parse,
-                           "\"%.*s\" is more clearly written simply as \"%s\". "
-                           "This will be a fatal error in Perl 5.28",
+                    vWARN4(RExC_parse,
+                           "\"%.*s\" is more clearly written simply as \"%s\"",
                            (int) (RExC_parse - rangebegin),
                            rangebegin,
                            literal
-                    );
+                        );
                 }
                 else if isMNEMONIC_CNTRL(value) {
-                    vWARN4dep(RExC_parse,
-                           "\"%.*s\" is more clearly written simply as \"%s\". "
-                           "This will be a fatal error in Perl 5.28",
+                    vWARN4(RExC_parse,
+                           "\"%.*s\" is more clearly written simply as \"%s\"",
                            (int) (RExC_parse - rangebegin),
                            rangebegin,
                            cntrl_to_mnemonic((U8) value)
-                    );
+                        );
                 }
             }
         }
@@ -16999,7 +16992,7 @@ S_regclass(pTHX_ RExC_state_t *pRExC_state, I32 *flagp, U32 depth,
     } /* End of loop through all the text within the brackets */
 
 
-    if (   posix_warnings && av_tindex_nomg(posix_warnings) >= 0) {
+    if (   posix_warnings && av_tindex_skip_len_mg(posix_warnings) >= 0) {
         output_or_return_posix_warnings(pRExC_state, posix_warnings,
                                         return_posix_warnings);
     }
@@ -17032,7 +17025,7 @@ S_regclass(pTHX_ RExC_state_t *pRExC_state, I32 *flagp, U32 depth,
 #endif
 
         /* Look at the longest folds first */
-        for (cp_count = av_tindex_nomg(multi_char_matches);
+        for (cp_count = av_tindex_skip_len_mg(multi_char_matches);
                         cp_count > 0;
                         cp_count--)
         {
@@ -17414,7 +17407,7 @@ S_regclass(pTHX_ RExC_state_t *pRExC_state, I32 *flagp, U32 depth,
                     {
                         AV* list = (AV*) *listp;
                         IV k;
-                        for (k = 0; k <= av_tindex_nomg(list); k++) {
+                        for (k = 0; k <= av_tindex_skip_len_mg(list); k++) {
                             SV** c_p = av_fetch(list, k, FALSE);
                             UV c;
                             assert(c_p);
@@ -18105,7 +18098,7 @@ Perl__get_regclass_nonbitmap_data(pTHX_ const regexp *prog,
 
 	    si = *ary;	/* ary[0] = the string to initialize the swash with */
 
-            if (av_tindex_nomg(av) >= 2) {
+            if (av_tindex_skip_len_mg(av) >= 2) {
                 if (only_utf8_locale_ptr
                     && ary[2]
                     && ary[2] != &PL_sv_undef)
@@ -18121,7 +18114,7 @@ Perl__get_regclass_nonbitmap_data(pTHX_ const regexp *prog,
                  * is any inversion list generated at compile time; [4]
                  * indicates if that inversion list has any user-defined
                  * properties in it. */
-                if (av_tindex_nomg(av) >= 3) {
+                if (av_tindex_skip_len_mg(av) >= 3) {
                     invlist = ary[3];
                     if (SvUV(ary[4])) {
                         swash_init_flags |= _CORE_SWASH_INIT_USER_DEFINED_PROPERTY;
