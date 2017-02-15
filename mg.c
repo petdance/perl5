@@ -944,7 +944,7 @@ Perl_magic_get(pTHX_ SV *sv, MAGIC *mg)
 	}
 	break;
     case '\010':		/* ^H */
-	sv_setiv(sv, (IV)PL_hints);
+	sv_setuv(sv, PL_hints);
 	break;
     case '\011':		/* ^I */ /* NOT \t in EBCDIC */
 	sv_setpv(sv, PL_inplace); /* Will undefine sv if PL_inplace is NULL */
@@ -2737,7 +2737,15 @@ Perl_magic_set(pTHX_ SV *sv, MAGIC *mg)
 	PL_maxsysfd = SvIV(sv);
 	break;
     case '\010':	/* ^H */
-	PL_hints = SvIV(sv);
+        {
+            U32 save_hints = PL_hints;
+            PL_hints = SvUV(sv);
+
+            /* If wasn't UTF-8, and now is, notify the parser */
+            if ((PL_hints & HINT_UTF8) && ! (save_hints & HINT_UTF8)) {
+                notify_parser_that_changed_to_utf8();
+            }
+        }
 	break;
     case '\011':	/* ^I */ /* NOT \t in EBCDIC */
 	Safefree(PL_inplace);

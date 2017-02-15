@@ -859,6 +859,7 @@ pP	|I32	|keyword	|NN const char *name|I32 len|bool all_keywords
 s	|void	|inplace_aassign	|NN OP* o
 #endif
 Ap	|void	|leave_scope	|I32 base
+p	|void	|notify_parser_that_changed_to_utf8
 : Public lexer API
 AMpd	|void	|lex_start	|NULLOK SV* line|NULLOK PerlIO *rsfp|U32 flags
 AMpd	|bool	|lex_bufutf8
@@ -1714,6 +1715,10 @@ ApdD	|UV	|to_utf8_case	|NN const U8 *p					\
 				|NN SV **swashp					\
 				|NN const char *normal|				\
 				NULLOK const char *special
+ApM	|char *	|_byte_dump_string					\
+				|NN const U8 * s			\
+				|const STRLEN len			\
+				|const bool format
 #if defined(PERL_IN_UTF8_C)
 inR	|bool	|does_utf8_overflow|NN const U8 * const s|NN const U8 * e
 inR	|bool	|is_utf8_overlong_given_start_byte_ok|NN const U8 * const s|const STRLEN len
@@ -1723,7 +1728,6 @@ sMR	|char *	|unexpected_non_continuation_text			\
 		|STRLEN print_len					\
 		|const STRLEN non_cont_byte_pos				\
 		|const STRLEN expect_len
-sM	|char *	|_byte_dump_string|NN const U8 * s|const STRLEN len
 s	|void	|warn_on_first_deprecated_use				    \
 				|NN const char * const name		    \
 				|NN const char * const alternative	    \
@@ -1876,8 +1880,10 @@ inR	|bool	|should_warn_nl|NN const char *pv
 p	|void	|write_to_stderr|NN SV* msv
 : Used in op.c
 p	|int	|yyerror	|NN const char *const s
+p	|void	|yyquit
+p	|void	|abort_execution|NN const char * const msg|NN const char * const name
 p	|int	|yyerror_pv	|NN const char *const s|U32 flags
-p	|int	|yyerror_pvn	|NN const char *const s|STRLEN len|U32 flags
+p	|int	|yyerror_pvn	|NULLOK const char *const s|STRLEN len|U32 flags
 : Used in perly.y, and by Data::Alias
 EXp	|int	|yylex
 p	|void	|yyunlex

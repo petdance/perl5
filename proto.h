@@ -41,6 +41,9 @@ PERL_CALLCONV void*	Perl_Slab_Alloc(pTHX_ size_t sz)
 PERL_CALLCONV void	Perl_Slab_Free(pTHX_ void *op);
 #define PERL_ARGS_ASSERT_SLAB_FREE	\
 	assert(op)
+PERL_CALLCONV char *	Perl__byte_dump_string(pTHX_ const U8 * s, const STRLEN len, const bool format);
+#define PERL_ARGS_ASSERT__BYTE_DUMP_STRING	\
+	assert(s)
 PERL_CALLCONV void	Perl__force_out_malformed_utf8_message(pTHX_ const U8 *const p, const U8 * const e, const U32 flags, const bool die_here);
 #define PERL_ARGS_ASSERT__FORCE_OUT_MALFORMED_UTF8_MESSAGE	\
 	assert(p); assert(e)
@@ -115,6 +118,9 @@ PERL_CALLCONV UV	Perl__to_utf8_upper_flags(pTHX_ const U8 *p, const U8 *e, U8* u
 #define PERL_ARGS_ASSERT__TO_UTF8_UPPER_FLAGS	\
 	assert(p); assert(ustrp); assert(file)
 PERL_CALLCONV void	Perl__warn_problematic_locale(void);
+PERL_CALLCONV void	Perl_abort_execution(pTHX_ const char * const msg, const char * const name);
+#define PERL_ARGS_ASSERT_ABORT_EXECUTION	\
+	assert(msg); assert(name)
 PERL_CALLCONV LOGOP*	Perl_alloc_LOGOP(pTHX_ I32 type, OP *first, OP *other);
 PERL_CALLCONV PADOFFSET	Perl_allocmy(pTHX_ const char *const name, const STRLEN len, const U32 flags);
 #define PERL_ARGS_ASSERT_ALLOCMY	\
@@ -2331,6 +2337,7 @@ PERL_CALLCONV_NO_RET void	Perl_noperl_die(const char* pat, ...)
 	assert(pat)
 
 PERL_CALLCONV int	Perl_nothreadhook(pTHX);
+PERL_CALLCONV void	Perl_notify_parser_that_changed_to_utf8(pTHX);
 PERL_CALLCONV OP*	Perl_oopsAV(pTHX_ OP* o)
 			__attribute__warn_unused_result__;
 #define PERL_ARGS_ASSERT_OOPSAV	\
@@ -3695,10 +3702,9 @@ PERL_CALLCONV int	Perl_yyerror_pv(pTHX_ const char *const s, U32 flags);
 #define PERL_ARGS_ASSERT_YYERROR_PV	\
 	assert(s)
 PERL_CALLCONV int	Perl_yyerror_pvn(pTHX_ const char *const s, STRLEN len, U32 flags);
-#define PERL_ARGS_ASSERT_YYERROR_PVN	\
-	assert(s)
 PERL_CALLCONV int	Perl_yylex(pTHX);
 PERL_CALLCONV int	Perl_yyparse(pTHX_ int gramtype);
+PERL_CALLCONV void	Perl_yyquit(pTHX);
 PERL_CALLCONV void	Perl_yyunlex(pTHX);
 #if !(defined(DEBUGGING))
 #  if !defined(NV_PRESERVES_UV)
@@ -5621,9 +5627,6 @@ STATIC bool	S_isa_lookup(pTHX_ HV *stash, const char * const name, STRLEN len, U
 	assert(stash); assert(name)
 #endif
 #if defined(PERL_IN_UTF8_C)
-STATIC char *	S__byte_dump_string(pTHX_ const U8 * s, const STRLEN len);
-#define PERL_ARGS_ASSERT__BYTE_DUMP_STRING	\
-	assert(s)
 STATIC UV	S__to_utf8_case(pTHX_ const UV uv1, const U8 *p, U8* ustrp, STRLEN *lenp, SV **swashp, const char *normal, const char *special);
 #define PERL_ARGS_ASSERT__TO_UTF8_CASE	\
 	assert(p); assert(ustrp); assert(swashp); assert(normal)

@@ -2193,7 +2193,7 @@ variable and glob that.
 (F) The C<exec> function is not implemented on some systems, e.g., Symbian
 OS.  See L<perlport>.
 
-=item Execution of %s aborted due to compilation errors.
+=item %sExecution of %s aborted due to compilation errors.
 
 (F) The final summary message when a Perl compilation fails.
 
@@ -3413,14 +3413,6 @@ set without validating the data, possibly resulting in this error
 message.
 
 See also L<Encode/"Handling Malformed Data">.
-
-=item Malformed UTF-8 character immediately after '%s'
-
-(F) You said C<use utf8>, but the program file doesn't comply with UTF-8
-encoding rules.  The message prints out the properly encoded characters
-just before the first bad one.  If C<utf8> warnings are enabled, a
-warning is generated that gives more details about the type of
-malformation.
 
 =item Malformed UTF-8 returned by \N{%s} immediately after '%s'
 
