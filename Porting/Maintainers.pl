@@ -1244,7 +1244,7 @@ use File::Glob qw(:case);
     },
 
     'threads' => {
-        'DISTRIBUTION' => 'JDHEDDEN/threads-2.12.tar.gz',
+        'DISTRIBUTION' => 'JDHEDDEN/threads-2.15.tar.gz',
         'FILES'        => q[dist/threads],
         'EXCLUDED'     => [
             qr{^examples/},
@@ -1256,7 +1256,7 @@ use File::Glob qw(:case);
     },
 
     'threads::shared' => {
-        'DISTRIBUTION' => 'JDHEDDEN/threads-shared-1.54.tar.gz',
+        'DISTRIBUTION' => 'JDHEDDEN/threads-shared-1.55.tar.gz',
         'FILES'        => q[dist/threads-shared],
         'EXCLUDED'     => [
             qw( examples/class.pl
