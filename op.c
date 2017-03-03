@@ -3780,7 +3780,7 @@ S_move_proto_attr(pTHX_ OP **proto, OP **attrs, const GV * name)
 }
 
 static void
-S_cant_declare(pTHX_ OP *o)
+S_cant_declare(pTHX_ const OP *o)
 {
     if (o->op_type == OP_NULL
      && (o->op_flags & (OPf_SPECIAL|OPf_KIDS)) == OPf_KIDS)
