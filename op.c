@@ -8131,8 +8131,8 @@ S_op_const_sv(pTHX_ const OP *o, CV *cv, bool allow_lex)
 }
 
 static void
-S_already_defined(pTHX_ CV *const cv, OP * const block, OP * const o,
-			PADNAME * const name, SV ** const const_svp)
+S_already_defined(pTHX_ CV *const cv, const OP * const block, OP * const o,
+                        const PADNAME * const name, SV ** const const_svp)
 {
     assert (cv);
     assert (o || name);
