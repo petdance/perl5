@@ -5568,7 +5568,7 @@ STATIC SV *	S_find_hash_subscript(pTHX_ const HV *const hv, const SV *const val)
 STATIC SV*	S_find_uninit_var(pTHX_ const OP *const obase, const SV *const uninit_sv, bool match, const char **desc_p);
 #define PERL_ARGS_ASSERT_FIND_UNINIT_VAR	\
 	assert(desc_p)
-STATIC bool	S_glob_2number(pTHX_ GV* const gv);
+STATIC bool	S_glob_2number(pTHX_ const GV* const gv);
 #define PERL_ARGS_ASSERT_GLOB_2NUMBER	\
 	assert(gv)
 STATIC void	S_glob_assign_glob(pTHX_ SV *const dstr, SV *const sstr, const int dtype);

@@ -1462,7 +1462,7 @@ Apd	|CV*	|sv_2cv		|NULLOK SV* sv|NN HV **const st|NN GV **const gvp \
 				|const I32 lref
 Apd	|IO*	|sv_2io		|NN SV *const sv
 #if defined(PERL_IN_SV_C)
-s	|bool	|glob_2number	|NN GV* const gv
+s	|bool	|glob_2number	|NN const GV* const gv
 #endif
 Apmb	|IV	|sv_2iv		|NN SV *sv
 Apd	|IV	|sv_2iv_flags	|NN SV *const sv|const I32 flags

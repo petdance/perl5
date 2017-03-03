@@ -1927,7 +1927,7 @@ Perl_looks_like_number(pTHX_ SV *const sv)
 }
 
 STATIC bool
-S_glob_2number(pTHX_ GV * const gv)
+S_glob_2number(pTHX_ const GV * const gv)
 {
     PERL_ARGS_ASSERT_GLOB_2NUMBER;
 
@@ -2401,7 +2401,7 @@ S_sv_2iuv_common(pTHX_ SV *const sv)
     }
     else  {
 	if (isGV_with_GP(sv))
-	    return glob_2number(MUTABLE_GV(sv));
+	    return glob_2number((GV *)sv);
 
 	if (!PL_localizing && ckWARN(WARN_UNINITIALIZED))
 		report_uninit(sv);
@@ -2795,7 +2795,7 @@ Perl_sv_2nv_flags(pTHX_ SV *const sv, const I32 flags)
     }
     else  {
 	if (isGV_with_GP(sv)) {
-	    glob_2number(MUTABLE_GV(sv));
+	    glob_2number((GV*)sv);
 	    return 0.0;
 	}
 
