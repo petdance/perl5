@@ -12563,7 +12563,7 @@ enum {
  * Returns a boolean indicating whether its shared */
 
 static bool
-S_aassign_padcheck(pTHX_ OP* o, bool rhs)
+S_aassign_padcheck(pTHX_ const OP* o, bool rhs)
 {
     if (PAD_COMPNAME_GEN(o->op_targ) == PERL_INT_MAX)
         /* lexical used in aliasing */
