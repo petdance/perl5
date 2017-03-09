@@ -2147,7 +2147,7 @@ behavior.
 
 Any S<C<use utf8>> or S<C<no utf8>> declarations within the string have
 no effect, and source filters are forbidden.  (C<unicode_strings>,
-however, can appear within the string.  See also the
+however, can appear within the string.)  See also the
 L<C<evalbytes>|/evalbytes EXPR> operator, which works properly with
 source filters.
 
@@ -7584,6 +7584,10 @@ interpretation as the last successful match.
 If PATTERN is C</^/>, then it is treated as if it used the
 L<multiline modifier|perlreref/OPERATORS> (C</^/m>), since it
 isn't much use otherwise.
+
+C<E<sol>m> and any of the other pattern modifiers valid for C<qr>
+(summarized in L<perlop/qrE<sol>STRINGE<sol>msixpodualn>) may be
+specified explicitly.
 
 As another special case,
 L<C<split>|/split E<sol>PATTERNE<sol>,EXPR,LIMIT> emulates the default
