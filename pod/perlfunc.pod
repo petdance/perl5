@@ -2147,7 +2147,7 @@ behavior.
 
 Any S<C<use utf8>> or S<C<no utf8>> declarations within the string have
 no effect, and source filters are forbidden.  (C<unicode_strings>,
-however, can appear within the string.  See also the
+however, can appear within the string.)  See also the
 L<C<evalbytes>|/evalbytes EXPR> operator, which works properly with
 source filters.
 
@@ -7585,6 +7585,10 @@ If PATTERN is C</^/>, then it is treated as if it used the
 L<multiline modifier|perlreref/OPERATORS> (C</^/m>), since it
 isn't much use otherwise.
 
+C<E<sol>m> and any of the other pattern modifiers valid for C<qr>
+(summarized in L<perlop/qrE<sol>STRINGE<sol>msixpodualn>) may be
+specified explicitly.
+
 As another special case,
 L<C<split>|/split E<sol>PATTERNE<sol>,EXPR,LIMIT> emulates the default
 behavior of the
@@ -9553,10 +9557,11 @@ extend the string with sufficiently many zero bytes.   It is an error
 to try to write off the beginning of the string (i.e., negative OFFSET).
 
 If the string happens to be encoded as UTF-8 internally (and thus has
-the UTF8 flag set), this is ignored by L<C<vec>|/vec EXPR,OFFSET,BITS>,
-and it operates on the
-internal byte string, not the conceptual character string, even if you
-only have characters with values less than 256.
+the UTF8 flag set), L<C<vec>|/vec EXPR,OFFSET,BITS> tries to convert it
+to use a one-byte-per-character internal representation. However, if the
+string contains characters with values of 256 or higher, that conversion
+will fail. In that situation, C<vec> will operate on the underlying buffer
+regardless, in its internal UTF-8 representation.
 
 Strings created with L<C<vec>|/vec EXPR,OFFSET,BITS> can also be
 manipulated with the logical
