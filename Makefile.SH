@@ -570,7 +570,7 @@ esac
 
 $spitshell >>$Makefile <<'!NO!SUBS!'
 
-perltoc_pod_prereqs = extra.pods pod/perl52511delta.pod pod/perlapi.pod pod/perlintern.pod pod/perlmodlib.pod pod/perluniprops.pod
+perltoc_pod_prereqs = extra.pods pod/perl5260delta.pod pod/perlapi.pod pod/perlintern.pod pod/perlmodlib.pod pod/perluniprops.pod
 generated_pods = pod/perltoc.pod $(perltoc_pod_prereqs)
 generated_headers = uudmap.h bitcount.h mg_data.h
 
@@ -1120,9 +1120,9 @@ pod/perlintern.pod: $(MINIPERL_EXE) autodoc.pl embed.fnc
 pod/perlmodlib.pod: $(MINIPERL_EXE) pod/perlmodlib.PL MANIFEST
 	$(MINIPERL) pod/perlmodlib.PL -q
 
-pod/perl52511delta.pod: pod/perldelta.pod
-	$(RMS) pod/perl52511delta.pod
-	$(LNS) perldelta.pod pod/perl52511delta.pod
+pod/perl5260delta.pod: pod/perldelta.pod
+	$(RMS) pod/perl5260delta.pod
+	$(LNS) perldelta.pod pod/perl5260delta.pod
 
 extra.pods: $(MINIPERL_EXE)
 	-@test ! -f extra.pods || rm -f `cat extra.pods`
@@ -1499,8 +1499,9 @@ depend: makedepend $(DTRACE_H) $(generated_headers)
 	test_prep_reonly test_tty test-tty test_notty test-notty \
 	test_harness test_harness_notty minitest test-reonly _test
 
+# The _test target is there just for Test::Smoke, which does a make test_prep
+# always before invoking this target, thus preventing checking again
 _test:
-	echo >&2 The _test target is deprecated. Please upgrade your smoker
 	$(RUN_TESTS) choose
 
 # Cannot delegate rebuilding of t/perl to make
