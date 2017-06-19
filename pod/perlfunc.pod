@@ -3577,7 +3577,8 @@ X<join>
 =for Pod::Functions join a list into a string using a separator
 
 Joins the separate strings of LIST into a single string with fields
-separated by the value of EXPR, and returns that new string.  Example:
+separated by the value of EXPR, and returns that new string.  If EXPR
+is an empty list, an empty string is returned.  Example:
 
    my $rec = join(':', $login,$passwd,$uid,$gid,$gcos,$home,$shell);
 
