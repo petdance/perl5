@@ -3,7 +3,10 @@ use strict;
 use vars qw/$VERSION %released %version %families %upstream
 	    %bug_tracker %deprecated %delta/;
 use version;
-$VERSION = '5.20170320';
+$VERSION = '5.20170621';
+
+sub PKG_PATTERN () { q#\A[a-zA-Z_][0-9a-zA-Z_]*(?:(::|')[0-9a-zA-Z_]+)*\z# }
+sub _looks_like_invocant ($) { local $@; !!eval { $_[0]->isa(__PACKAGE__) } }
 
 sub _undelta {
     my ($delta) = @_;
@@ -44,9 +47,8 @@ END {
 
 
 sub first_release_raw {
+    shift if defined $_[1] and $_[1] =~ PKG_PATTERN and _looks_like_invocant $_[0];
     my $module = shift;
-    $module = shift if eval { $module->isa(__PACKAGE__) }
-      and scalar @_ and $_[0] =~ m#\A[a-zA-Z_][0-9a-zA-Z_]*(?:(::|')[0-9a-zA-Z_]+)*\z#;
     my $version = shift;
 
     my @perls = $version
@@ -70,10 +72,9 @@ sub first_release {
 }
 
 sub find_modules {
+    shift if _looks_like_invocant $_[0];
     my $regex = shift;
-    $regex = shift if eval { $regex->isa(__PACKAGE__) };
-    my @perls = @_;
-    @perls = keys %version unless @perls;
+    my @perls = @_ ? @_ : keys %version;
 
     my %mods;
     foreach (@perls) {
@@ -85,30 +86,23 @@ sub find_modules {
 }
 
 sub find_version {
+    shift if _looks_like_invocant $_[0];
     my $v = shift;
-    if ($v->isa(__PACKAGE__)) {
-        $v = shift;
-        return if not defined $v;
-    }
-    return $version{$v} if defined $version{$v};
+    return $version{$v} if defined $v and defined $version{$v};
     return;
 }
 
 sub is_deprecated {
+    shift if defined $_[1] and $_[1] =~ PKG_PATTERN and _looks_like_invocant $_[0];
     my $module = shift;
-    $module = shift if eval { $module->isa(__PACKAGE__) }
-      and scalar @_ and $_[0] =~ m#\A[a-zA-Z_][0-9a-zA-Z_]*(?:(::|')[0-9a-zA-Z_]+)*\z#;
-    my $perl_version = shift;
-    $perl_version ||= $];
+    my $perl_version = shift || $];
     return unless $module && exists $deprecated{$perl_version}{$module};
     return $deprecated{$perl_version}{$module};
 }
 
 sub deprecated_in {
-    my $module = shift;
-    $module = shift if eval { $module->isa(__PACKAGE__) }
-      and scalar @_ and $_[0] =~ m#\A[a-zA-Z_][0-9a-zA-Z_]*(?:(::|')[0-9a-zA-Z_]+)*\z#;
-    return unless $module;
+    shift if defined $_[1] and $_[1] =~ PKG_PATTERN and _looks_like_invocant $_[0];
+    my $module = shift or return;
     my @perls = grep { exists $deprecated{$_}{$module} } keys %deprecated;
     return unless @perls;
     require List::Util;
@@ -126,9 +120,8 @@ sub removed_from_by_date {
 }
 
 sub removed_raw {
+  shift if defined $_[1] and $_[1] =~ PKG_PATTERN and _looks_like_invocant $_[0];
   my $mod = shift;
-  $mod = shift if eval { $mod->isa(__PACKAGE__) }
-      and scalar @_ and $_[0] =~ m#\A[a-zA-Z_][0-9a-zA-Z_]*(?:(::|')[0-9a-zA-Z_]+)*\z#;
   return unless my @perls = sort { $a cmp $b } first_release_raw($mod);
   my $last = pop @perls;
   my @removed = grep { $_ > $last } sort { $a cmp $b } keys %version;
@@ -136,8 +129,8 @@ sub removed_raw {
 }
 
 sub changes_between {
+  shift if _looks_like_invocant $_[0];
   my $left_ver = shift;
-  $left_ver = shift if eval { $left_ver->isa(__PACKAGE__) };
   my $right_ver = shift;
 
   my $left  = $version{ $left_ver };
@@ -318,7 +311,11 @@ sub changes_between {
     5.024001 => '2017-01-14',
     5.025009 => '2017-01-20',
     5.025010 => '2017-02-20',
-    5.025011 => '????-??-??',
+    5.025011 => '2017-03-20',
+    5.025012 => '2017-04-20',
+    5.026000 => '2017-05-30',
+    5.027000 => '2017-05-31',
+    5.027001 => '2017-06-03',
   );
 
 for my $version ( sort { $a <=> $b } keys %released ) {
@@ -13952,11 +13949,220 @@ for my $version ( sort { $a <=> $b } keys %released ) {
     5.025011 => {
         delta_from => 5.025010,
         changed => {
+            'App::Prove'            => '3.38',
+            'App::Prove::State'     => '3.38',
+            'App::Prove::State::Result'=> '3.38',
+            'App::Prove::State::Result::Test'=> '3.38',
             'B::Op_private'         => '5.025011',
+            'Compress::Raw::Bzip2'  => '2.074',
+            'Compress::Raw::Zlib'   => '2.074',
+            'Compress::Zlib'        => '2.074',
             'Config'                => '5.025011',
+            'Config::Perl::V'       => '0.28',
+            'Cwd'                   => '3.67',
+            'ExtUtils::ParseXS'     => '3.34',
+            'ExtUtils::ParseXS::Constants'=> '3.34',
+            'ExtUtils::ParseXS::CountLines'=> '3.34',
+            'ExtUtils::ParseXS::Eval'=> '3.34',
+            'ExtUtils::Typemaps'    => '3.34',
+            'ExtUtils::Typemaps::Cmd'=> '3.34',
+            'ExtUtils::Typemaps::InputMap'=> '3.34',
+            'ExtUtils::Typemaps::OutputMap'=> '3.34',
+            'ExtUtils::Typemaps::Type'=> '3.34',
+            'File::Spec'            => '3.67',
+            'File::Spec::AmigaOS'   => '3.67',
+            'File::Spec::Cygwin'    => '3.67',
+            'File::Spec::Epoc'      => '3.67',
+            'File::Spec::Functions' => '3.67',
+            'File::Spec::Mac'       => '3.67',
+            'File::Spec::OS2'       => '3.67',
+            'File::Spec::Unix'      => '3.67',
+            'File::Spec::VMS'       => '3.67',
+            'File::Spec::Win32'     => '3.67',
+            'IO::Compress::Adapter::Bzip2'=> '2.074',
+            'IO::Compress::Adapter::Deflate'=> '2.074',
+            'IO::Compress::Adapter::Identity'=> '2.074',
+            'IO::Compress::Base'    => '2.074',
+            'IO::Compress::Base::Common'=> '2.074',
+            'IO::Compress::Bzip2'   => '2.074',
+            'IO::Compress::Deflate' => '2.074',
+            'IO::Compress::Gzip'    => '2.074',
+            'IO::Compress::Gzip::Constants'=> '2.074',
+            'IO::Compress::RawDeflate'=> '2.074',
+            'IO::Compress::Zip'     => '2.074',
+            'IO::Compress::Zip::Constants'=> '2.074',
+            'IO::Compress::Zlib::Constants'=> '2.074',
+            'IO::Compress::Zlib::Extra'=> '2.074',
+            'IO::Uncompress::Adapter::Bunzip2'=> '2.074',
+            'IO::Uncompress::Adapter::Identity'=> '2.074',
+            'IO::Uncompress::Adapter::Inflate'=> '2.074',
+            'IO::Uncompress::AnyInflate'=> '2.074',
+            'IO::Uncompress::AnyUncompress'=> '2.074',
+            'IO::Uncompress::Base'  => '2.074',
+            'IO::Uncompress::Bunzip2'=> '2.074',
+            'IO::Uncompress::Gunzip'=> '2.074',
+            'IO::Uncompress::Inflate'=> '2.074',
+            'IO::Uncompress::RawInflate'=> '2.074',
+            'IO::Uncompress::Unzip' => '2.074',
             'Module::CoreList'      => '5.20170320',
             'Module::CoreList::TieHashDelta'=> '5.20170230',
             'Module::CoreList::Utils'=> '5.20170320',
+            'Pod::Perldoc'          => '3.28',
+            'Pod::Perldoc::BaseTo'  => '3.28',
+            'Pod::Perldoc::GetOptsOO'=> '3.28',
+            'Pod::Perldoc::ToANSI'  => '3.28',
+            'Pod::Perldoc::ToChecker'=> '3.28',
+            'Pod::Perldoc::ToMan'   => '3.28',
+            'Pod::Perldoc::ToNroff' => '3.28',
+            'Pod::Perldoc::ToPod'   => '3.28',
+            'Pod::Perldoc::ToRtf'   => '3.28',
+            'Pod::Perldoc::ToTerm'  => '3.28',
+            'Pod::Perldoc::ToText'  => '3.28',
+            'Pod::Perldoc::ToTk'    => '3.28',
+            'Pod::Perldoc::ToXml'   => '3.28',
+            'TAP::Base'             => '3.38',
+            'TAP::Formatter::Base'  => '3.38',
+            'TAP::Formatter::Color' => '3.38',
+            'TAP::Formatter::Console'=> '3.38',
+            'TAP::Formatter::Console::ParallelSession'=> '3.38',
+            'TAP::Formatter::Console::Session'=> '3.38',
+            'TAP::Formatter::File'  => '3.38',
+            'TAP::Formatter::File::Session'=> '3.38',
+            'TAP::Formatter::Session'=> '3.38',
+            'TAP::Harness'          => '3.38',
+            'TAP::Harness::Env'     => '3.38',
+            'TAP::Object'           => '3.38',
+            'TAP::Parser'           => '3.38',
+            'TAP::Parser::Aggregator'=> '3.38',
+            'TAP::Parser::Grammar'  => '3.38',
+            'TAP::Parser::Iterator' => '3.38',
+            'TAP::Parser::Iterator::Array'=> '3.38',
+            'TAP::Parser::Iterator::Process'=> '3.38',
+            'TAP::Parser::Iterator::Stream'=> '3.38',
+            'TAP::Parser::IteratorFactory'=> '3.38',
+            'TAP::Parser::Multiplexer'=> '3.38',
+            'TAP::Parser::Result'   => '3.38',
+            'TAP::Parser::Result::Bailout'=> '3.38',
+            'TAP::Parser::Result::Comment'=> '3.38',
+            'TAP::Parser::Result::Plan'=> '3.38',
+            'TAP::Parser::Result::Pragma'=> '3.38',
+            'TAP::Parser::Result::Test'=> '3.38',
+            'TAP::Parser::Result::Unknown'=> '3.38',
+            'TAP::Parser::Result::Version'=> '3.38',
+            'TAP::Parser::Result::YAML'=> '3.38',
+            'TAP::Parser::ResultFactory'=> '3.38',
+            'TAP::Parser::Scheduler'=> '3.38',
+            'TAP::Parser::Scheduler::Job'=> '3.38',
+            'TAP::Parser::Scheduler::Spinner'=> '3.38',
+            'TAP::Parser::Source'   => '3.38',
+            'TAP::Parser::SourceHandler'=> '3.38',
+            'TAP::Parser::SourceHandler::Executable'=> '3.38',
+            'TAP::Parser::SourceHandler::File'=> '3.38',
+            'TAP::Parser::SourceHandler::Handle'=> '3.38',
+            'TAP::Parser::SourceHandler::Perl'=> '3.38',
+            'TAP::Parser::SourceHandler::RawTAP'=> '3.38',
+            'TAP::Parser::YAMLish::Reader'=> '3.38',
+            'TAP::Parser::YAMLish::Writer'=> '3.38',
+            'Test::Harness'         => '3.38',
+            'VMS::Stdio'            => '2.41',
+            'threads'               => '2.15',
+            'threads::shared'       => '1.55',
+        },
+        removed => {
+        }
+    },
+    5.025012 => {
+        delta_from => 5.025011,
+        changed => {
+            'B::Op_private'         => '5.025012',
+            'CPAN'                  => '2.18',
+            'CPAN::Bundle'          => '5.5003',
+            'CPAN::Distribution'    => '2.18',
+            'Config'                => '5.025012',
+            'DynaLoader'            => '1.42',
+            'Module::CoreList'      => '5.20170420',
+            'Module::CoreList::TieHashDelta'=> '5.20170420',
+            'Module::CoreList::Utils'=> '5.20170420',
+            'Safe'                  => '2.40',
+            'XSLoader'              => '0.27',
+            'base'                  => '2.25',
+            'threads::shared'       => '1.56',
+        },
+        removed => {
+        }
+    },
+    5.026000 => {
+        delta_from => 5.025012,
+        changed => {
+            'B::Op_private'         => '5.026000',
+            'Config'                => '5.026',
+            'Module::CoreList'      => '5.20170530',
+            'Module::CoreList::TieHashDelta'=> '5.20170530',
+            'Module::CoreList::Utils'=> '5.20170530',
+        },
+        removed => {
+        }
+    },
+    5.027000 => {
+        delta_from => 5.026000,
+        changed => {
+            'Attribute::Handlers'   => '1.00',
+            'B::Concise'            => '1.000',
+            'B::Deparse'            => '1.41',
+            'B::Op_private'         => '5.027000',
+            'Config'                => '5.027',
+            'Module::CoreList'      => '5.20170620',
+            'Module::CoreList::TieHashDelta'=> '5.20170620',
+            'Module::CoreList::Utils'=> '5.20170620',
+            'O'                     => '1.02',
+            'attributes'            => '0.3',
+            'feature'               => '1.48',
+        },
+        removed => {
+        }
+    },
+    5.027001 => {
+        delta_from => 5.027000,
+        changed => {
+            'B::Op_private'         => '5.027001',
+            'Config'                => '5.027001',
+            'GDBM_File'             => '1.16',
+            'Locale::Codes'         => '3.52',
+            'Locale::Codes::Constants'=> '3.52',
+            'Locale::Codes::Country'=> '3.52',
+            'Locale::Codes::Country_Codes'=> '3.52',
+            'Locale::Codes::Country_Retired'=> '3.52',
+            'Locale::Codes::Currency'=> '3.52',
+            'Locale::Codes::Currency_Codes'=> '3.52',
+            'Locale::Codes::Currency_Retired'=> '3.52',
+            'Locale::Codes::LangExt'=> '3.52',
+            'Locale::Codes::LangExt_Codes'=> '3.52',
+            'Locale::Codes::LangExt_Retired'=> '3.52',
+            'Locale::Codes::LangFam'=> '3.52',
+            'Locale::Codes::LangFam_Codes'=> '3.52',
+            'Locale::Codes::LangFam_Retired'=> '3.52',
+            'Locale::Codes::LangVar'=> '3.52',
+            'Locale::Codes::LangVar_Codes'=> '3.52',
+            'Locale::Codes::LangVar_Retired'=> '3.52',
+            'Locale::Codes::Language'=> '3.52',
+            'Locale::Codes::Language_Codes'=> '3.52',
+            'Locale::Codes::Language_Retired'=> '3.52',
+            'Locale::Codes::Script' => '3.52',
+            'Locale::Codes::Script_Codes'=> '3.52',
+            'Locale::Codes::Script_Retired'=> '3.52',
+            'Locale::Country'       => '3.52',
+            'Locale::Currency'      => '3.52',
+            'Locale::Language'      => '3.52',
+            'Locale::Script'        => '3.52',
+            'XS::APItest'           => '0.89',
+            '_charnames'            => '1.45',
+            'charnames'             => '1.45',
+            'if'                    => '0.0607',
+            'mro'                   => '1.21',
+            'threads'               => '2.16',
+            'threads::shared'       => '1.57',
+            'version'               => '0.9918',
+            'version::regex'        => '0.9918',
         },
         removed => {
         }
@@ -13965,12 +14171,10 @@ for my $version ( sort { $a <=> $b } keys %released ) {
 
 sub is_core
 {
+    shift if defined $_[1] and $_[1] =~ /^\w/ and _looks_like_invocant $_[0];
     my $module = shift;
-    $module = shift if eval { $module->isa(__PACKAGE__) } && @_ > 0 && defined($_[0]) && $_[0] =~ /^\w/;
-    my ($module_version, $perl_version);
-
-    $module_version = shift if @_ > 0;
-    $perl_version   = @_ > 0 ? shift : $];
+    my $module_version = @_ > 0 ? shift : undef;
+    my $perl_version   = @_ > 0 ? shift : $];
 
     my $first_release = first_release($module);
 
@@ -14701,6 +14905,34 @@ sub is_core
     },
     5.025011 => {
         delta_from => 5.025010,
+        changed => {
+        },
+        removed => {
+        }
+    },
+    5.025012 => {
+        delta_from => 5.025011,
+        changed => {
+        },
+        removed => {
+        }
+    },
+    5.026000 => {
+        delta_from => 5.025012,
+        changed => {
+        },
+        removed => {
+        }
+    },
+    5.027000 => {
+        delta_from => 5.026,
+        changed => {
+        },
+        removed => {
+        }
+    },
+    5.027001 => {
+        delta_from => 5.027,
         changed => {
         },
         removed => {
@@ -15515,7 +15747,7 @@ sub is_core
     'Test2::Event::Encoding'=> 'http://github.com/Test-More/test-more/issues',
     'Test2::Event::Exception'=> 'http://github.com/Test-More/test-more/issues',
     'Test2::Event::Generic' => 'http://github.com/Test-More/test-more/issues',
-    'Test2::Event::Info'    => 'http://github.com/Test-More/test-more/issues',
+    'Test2::Event::Info'    => undef,
     'Test2::Event::Note'    => 'http://github.com/Test-More/test-more/issues',
     'Test2::Event::Ok'      => 'http://github.com/Test-More/test-more/issues',
     'Test2::Event::Plan'    => 'http://github.com/Test-More/test-more/issues',

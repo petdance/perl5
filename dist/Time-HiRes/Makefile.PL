@@ -421,7 +421,7 @@ sub init {
     if (-f $hints) {
 	print "Using hints $hints...\n";
 	local $self;
-	do $hints;
+	do "./$hints";
 	if (exists $self->{LIBS}) {
 	    $LIBS = $self->{LIBS};
 	    print "Extra libraries: @$LIBS...\n";
