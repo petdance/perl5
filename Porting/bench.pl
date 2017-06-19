@@ -392,7 +392,7 @@ my %OPTS = (
         'norm=s'      => \$OPTS{norm},
         'perlargs=s'  => \$OPTS{perlargs},
         'raw'         => \$OPTS{raw},
-        'read|r=s'    => \$OPTS{read},
+        'read|r=s@'   => \$OPTS{read},
         'show!'       => \$OPTS{show},
         'sort=s'      => \$OPTS{sort},
         'tests=s'     => \$OPTS{tests},
@@ -431,7 +431,7 @@ my %OPTS = (
               . "'$OPTS{sort}'\n";
         }
         my ($field, $perl) = @s;
-        die "Error: --sort: unknown field '$field\n"
+        die "Error: --sort: unknown field '$field'\n"
             unless $VALID_FIELDS{$field};
         # the 'perl' value will be validated later, after we have processed
         # the perls
@@ -504,7 +504,11 @@ sub filter_tests {
 sub read_tests_file {
     my ($file) = @_;
 
-    my $ta = do $file;
+    my $ta;
+    {
+        local @INC = ('.');
+        $ta = do $file;
+    }
     unless ($ta) {
         die "Error: can't parse '$file': $@\n" if $@;
         die "Error: can't read '$file': $!\n";
@@ -675,25 +679,48 @@ sub do_grind {
             if $bisect_min > $bisect_max;
     }
 
-    if ($OPTS{read}) {
-        open my $in, '<:encoding(UTF-8)', $OPTS{read}
-            or die " Error: can't open '$OPTS{read}' for reading: $!\n";
+    foreach my $file (@{$OPTS{read}}) {
+        open my $in, '<:encoding(UTF-8)', $file
+            or die " Error: can't open '$file' for reading: $!\n";
         my $data = do { local $/; <$in> };
         close $in;
 
         my $hash = JSON::PP::decode_json($data);
         if (int($FORMAT_VERSION) < int($hash->{version})) {
             die "Error: unsupported version $hash->{version} in file"
-              . "'$OPTS{read}' (too new)\n";
+              . "'$file' (too new)\n";
         }
-        ($loop_counts, $perls, $results, $tests, $order) =
+        my ($read_loop_counts, $read_perls, $read_results, $read_tests, $read_order) =
             @$hash{qw(loop_counts perls results tests order)};
+        filter_tests($read_results);
+        filter_tests($read_tests);
+        if (!$read_order) {
+            $order = [ sort keys %$read_tests ];
+        }
+        if (!$loop_counts) {
+            ($loop_counts, $perls, $results, $tests, $order) =
+                ($read_loop_counts, $read_perls, $read_results, $read_tests, $read_order);
+            filter_tests($results);
+            filter_tests($tests);
+            if (!$order) {
+                $order = [ sort keys %$tests ];
+            }
+        } else {
+            my @have_keys= sort keys %$read_tests;
+            my @want_keys= sort keys %$tests;
 
-        filter_tests($results);
-        filter_tests($tests);
+            if ("@have_keys" ne "@want_keys" or
+                "@$read_loop_counts" ne "@$loop_counts")
+            {
+                die "tests run aren't the same, cant merge read files";
+            }
 
-        if (!$order) {
-            $order = [ sort keys %$tests ];
+            push @$perls, @{$hash->{perls}};
+            foreach my $test (keys %{$hash->{results}}) {
+                foreach my $perl (keys %{$hash->{results}{$test}}) {
+                    $results->{$test}{$perl}= $hash->{results}{$test}{$perl};
+                }
+            }
         }
     }
 
@@ -1421,8 +1448,10 @@ EOF
         },
     );
 
-    for ('t', '.') {
-        last if require "$_/test.pl";
+    for ('./t', '.') {
+        my $t = "$_/test.pl";
+        next unless  -f $t;
+        require $t;
     }
     plan(@tests / 3 * keys %VALID_FIELDS);
 
