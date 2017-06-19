@@ -816,6 +816,8 @@ Perl_fbm_instr(pTHX_ unsigned char *big, unsigned char *bigend, SV *littlestr, U
 
     PERL_ARGS_ASSERT_FBM_INSTR;
 
+    assert(bigend >= big);
+
     if ((STRLEN)(bigend - big) < littlelen) {
 	if (     tail
 	     && ((STRLEN)(bigend - big) == littlelen - 1)
@@ -3352,9 +3354,8 @@ Perl_find_script(pTHX_ const char *scriptname, bool dosearch,
 	    if (len < sizeof tmpbuf)
 		tmpbuf[len] = '\0';
 #  else
-	    s = delimcpy(tmpbuf, tmpbuf + sizeof tmpbuf, s, bufend,
-			':',
-			&len);
+	    s = delimcpy_no_escape(tmpbuf, tmpbuf + sizeof tmpbuf, s, bufend,
+                                   ':', &len);
 #  endif
 	    if (s < bufend)
 		s++;
@@ -4632,7 +4633,6 @@ Perl_get_hash_seed(pTHX_ unsigned char * const seed_buffer)
     env_pv= PerlEnv_getenv("PERL_HASH_SEED");
 
     if ( env_pv )
-#  ifndef USE_HASH_SEED_EXPLICIT
     {
         /* ignore leading spaces */
         while (isSPACE(*env_pv))
@@ -4667,8 +4667,7 @@ Perl_get_hash_seed(pTHX_ unsigned char * const seed_buffer)
         /* should we warn about insufficient hex? */
     }
     else
-#  endif
-#endif
+#endif /* NO_PERL_HASH_ENV */
     {
         (void)seedDrand01((Rand_seed_t)seed());
 
@@ -5352,9 +5351,11 @@ Perl_my_cxt_init(pTHX_ int *index, size_t size)
     /* make sure the array is big enough */
     if (PL_my_cxt_size <= *index) {
 	if (PL_my_cxt_size) {
-	    while (PL_my_cxt_size <= *index)
-		PL_my_cxt_size *= 2;
-	    Renew(PL_my_cxt_list, PL_my_cxt_size, void *);
+            IV new_size = PL_my_cxt_size;
+	    while (new_size <= *index)
+		new_size *= 2;
+	    Renew(PL_my_cxt_list, new_size, void *);
+            PL_my_cxt_size = new_size;
 	}
 	else {
 	    PL_my_cxt_size = 16;
@@ -5415,10 +5416,12 @@ Perl_my_cxt_init(pTHX_ const char *my_cxt_key, size_t size)
 	int old_size = PL_my_cxt_size;
 	int i;
 	if (PL_my_cxt_size) {
-	    while (PL_my_cxt_size <= index)
-		PL_my_cxt_size *= 2;
-	    Renew(PL_my_cxt_list, PL_my_cxt_size, void *);
-	    Renew(PL_my_cxt_keys, PL_my_cxt_size, const char *);
+            IV new_size = PL_my_cxt_size;
+	    while (new_size <= index)
+		new_size *= 2;
+	    Renew(PL_my_cxt_list, new_size, void *);
+	    Renew(PL_my_cxt_keys, new_size, const char *);
+            PL_my_cxt_size = new_size;
 	}
 	else {
 	    PL_my_cxt_size = 16;
