@@ -34,7 +34,8 @@
 #define PERL_IN_PP_CTL_C
 #include "perl.h"
 
-#define DOCATCH(o) ((CATCH_GET == TRUE) ? docatch(o) : (o))
+#define RUN_PP_CATCHABLY(thispp) \
+    STMT_START { if (CATCH_GET) return docatch(thispp); } STMT_END
 
 #define dopoptosub(plop)	dopoptosub_at(cxstack, (plop))
 
@@ -1684,7 +1685,13 @@ Perl_die_unwind(pTHX_ SV *msv)
     if (in_eval) {
 	I32 cxix;
 
-        exceptsv = sv_2mortal(SvREFCNT_inc_simple_NN(exceptsv));
+        /* We need to keep this SV alive through all the stack unwinding
+         * and FREETMPSing below, while ensuing that it doesn't leak
+         * if we call out to something which then dies (e.g. sub STORE{die}
+         * when unlocalising a tied var). So we do a dance with
+         * mortalising and SAVEFREEing.
+         */
+        sv_2mortal(SvREFCNT_inc_simple_NN(exceptsv));
 
 	/*
 	 * Historically, perl used to set ERRSV ($@) early in the die
@@ -1753,6 +1760,24 @@ Perl_die_unwind(pTHX_ SV *msv)
 
 	    restartjmpenv = cx->blk_eval.cur_top_env;
 	    restartop     = cx->blk_eval.retop;
+
+            /* We need a FREETMPS here to avoid late-called destructors
+             * clobbering $@ *after* we set it below, e.g.
+             *    sub DESTROY { eval { die "X" } }
+             *    eval { my $x = bless []; die $x = 0, "Y" };
+             *    is($@, "Y")
+             * Here the clearing of the $x ref mortalises the anon array,
+             * which needs to be freed *before* $& is set to "Y",
+             * otherwise it gets overwritten with "X".
+             *
+             * However, the FREETMPS will clobber exceptsv, so preserve it
+             * on the savestack for now.
+             */
+            SAVEFREESV(SvREFCNT_inc_simple_NN(exceptsv));
+            FREETMPS;
+            /* now we're about to pop the savestack, so re-mortalise it */
+            sv_2mortal(SvREFCNT_inc_simple_NN(exceptsv));
+
             /* Note that unlike pp_entereval, pp_require isn't supposed to
              * trap errors. So if we're a require, after we pop the
              * CXt_EVAL that pp_require pushed, rethrow the error with
@@ -3159,23 +3184,18 @@ establish a local jmpenv to handle exception traps.
 =cut
 */
 STATIC OP *
-S_docatch(pTHX_ OP *o)
+S_docatch(pTHX_ Perl_ppaddr_t firstpp)
 {
     int ret;
     OP * const oldop = PL_op;
     dJMPENV;
 
-#ifdef DEBUGGING
     assert(CATCH_GET == TRUE);
-#endif
-    PL_op = o;
 
     JMPENV_PUSH(ret);
     switch (ret) {
     case 0:
-	assert(cxstack_ix >= 0);
-	assert(CxTYPE(CX_CUR()) == CXt_EVAL);
-        CX_CUR()->blk_eval.cur_top_env = PL_top_env;
+	PL_op = firstpp(aTHX);
  redo_body:
 	CALLRUNOPS(aTHX);
 	break;
@@ -3506,6 +3526,9 @@ S_doeval_compile(pTHX_ U8 gimme, CV* outside, U32 seq, HV *hh)
     return TRUE;
 }
 
+/* Return NULL if the file doesn't exist or isn't a file;
+ * else return PerlIO_openn().
+ */
 
 STATIC PerlIO *
 S_check_type_and_open(pTHX_ SV *name)
@@ -3566,6 +3589,11 @@ S_check_type_and_open(pTHX_ SV *name)
     return retio;
 }
 
+/* doopen_pm(): return the equivalent of PerlIO_openn() on the given name,
+ * but first check for bad names (\0) and non-files.
+ * Also if the filename ends in .pm and unless PERL_DISABLE_PMC,
+ * try loading Foo.pmc first.
+ */
 #ifndef PERL_DISABLE_PMC
 STATIC PerlIO *
 S_doopen_pm(pTHX_ SV *name)
@@ -3599,8 +3627,8 @@ S_doopen_pm(pTHX_ SV *name)
 #  define doopen_pm(name) check_type_and_open(name)
 #endif /* !PERL_DISABLE_PMC */
 
-/* require doesn't search for absolute names, or when the name is
-   explicitly relative the current directory */
+/* require doesn't search in @INC for absolute names, or when the name is
+   explicitly relative the current directory: i.e. ./, ../ */
 PERL_STATIC_INLINE bool
 S_path_is_searchable(const char *name)
 {
@@ -3695,7 +3723,7 @@ S_require_version(pTHX_ SV *sv)
  * the second form */
 
 static OP *
-S_require_file(pTHX_ SV *const sv)
+S_require_file(pTHX_ SV *sv)
 {
     dVAR; dSP;
 
@@ -3708,8 +3736,10 @@ S_require_file(pTHX_ SV *const sv)
     int vms_unixname = 0;
     char *unixdir;
 #endif
+    /* tryname is the actual pathname (with @INC prefix) which was loaded.
+     * It's stored as a value in %INC, and used for error messages */
     const char *tryname = NULL;
-    SV *namesv = NULL;
+    SV *namesv = NULL; /* SV equivalent of tryname */
     const U8 gimme = GIMME_V;
     int filter_has_file = 0;
     PerlIO *tryrsfp = NULL;
@@ -3780,14 +3810,20 @@ S_require_file(pTHX_ SV *const sv)
 			    "Compilation failed in require", unixname);
 	}
 
+        /*XXX OPf_KIDS should always be true? -dapm 4/2017 */
         if (PL_op->op_flags & OPf_KIDS) {
             SVOP * const kid = (SVOP*)cUNOP->op_first;
 
             if (kid->op_type == OP_CONST && (kid->op_private & OPpCONST_BARE)) {
-                /* require foo (or use foo) with a bareword.
-                   Perl_load_module fakes up the identical optree, but its
-                   arguments aren't restricted by the parser to real barewords.
-                */
+                /* Make sure that a bareword module name (e.g. ::Foo::Bar)
+                 * doesn't map to a naughty pathname like /Foo/Bar.pm.
+                 * Note that the parser will normally detect such errors
+                 * at compile time before we reach here, but
+                 * Perl_load_module() can fake up an identical optree
+                 * without going near the parser, and being able to put
+                 * anything as the bareword. So we include a duplicate set
+                 * of checks here at runtime.
+                 */
                 const STRLEN package_len = len - 3;
                 const char slashdot[2] = {'/', '.'};
 #ifdef DOSISH
@@ -3823,13 +3859,22 @@ S_require_file(pTHX_ SV *const sv)
 
     PERL_DTRACE_PROBE_FILE_LOADING(unixname);
 
-    /* prepare to compile file */
+    /* Try to locate and open a file, possibly using @INC  */
 
+    /* with "/foo/bar.pm", "./foo.pm" and "../foo/bar.pm", try to load
+     * the file directly rather than via @INC ... */
     if (!path_searchable) {
 	/* At this point, name is SvPVX(sv)  */
 	tryname = name;
 	tryrsfp = doopen_pm(sv);
     }
+
+    /* ... but if we fail, still search @INC for code references;
+     * these are applied even on on-searchable paths (except
+     * if we got EACESS).
+     *
+     * For searchable paths, just search @INC normally
+     */
     if (!tryrsfp && !(errno == EACCES && !path_searchable)) {
 	AV * const ar = GvAVn(PL_incgv);
 	SSize_t i;
@@ -3972,8 +4017,9 @@ S_require_file(pTHX_ SV *const sv)
 			filter_sub = NULL;
 		    }
 		}
-		else {
-		  if (path_searchable) {
+		else if (path_searchable) {
+                    /* match against a plain @INC element (non-searchable
+                     * paths are only matched against refs in @INC) */
 		    const char *dir;
 		    STRLEN dirlen;
 
@@ -4053,41 +4099,74 @@ S_require_file(pTHX_ SV *const sv)
                          */
                         break;
                     }
-		  }
 		}
 	    }
 	}
     }
+
+    /* at this point we've ether opened a file (tryrsfp) or set errno */
+
     saved_errno = errno; /* sv_2mortal can realloc things */
     sv_2mortal(namesv);
     if (!tryrsfp) {
+        /* we failed; croak if require() or return undef if do() */
 	if (op_is_require) {
 	    if(saved_errno == EMFILE || saved_errno == EACCES) {
 		/* diag_listed_as: Can't locate %s */
 		DIE(aTHX_ "Can't locate %s:   %s: %s",
 		    name, tryname, Strerror(saved_errno));
 	    } else {
-	        if (namesv) {			/* did we lookup @INC? */
+	        if (path_searchable) {		/* did we lookup @INC? */
 		    AV * const ar = GvAVn(PL_incgv);
 		    SSize_t i;
 		    SV *const msg = newSVpvs_flags("", SVs_TEMP);
 		    SV *const inc = newSVpvs_flags("", SVs_TEMP);
+                    const char *e = name + len - 3; /* possible .pm */
 		    for (i = 0; i <= AvFILL(ar); i++) {
 			sv_catpvs(inc, " ");
 			sv_catsv(inc, *av_fetch(ar, i, TRUE));
 		    }
-		    if (len >= 4 && memEQ(name + len - 3, ".pm", 4)) {
-			const char *c, *e = name + len - 3;
-			sv_catpv(msg, " (you may need to install the ");
-			for (c = name; c < e; c++) {
-			    if (*c == '/') {
-				sv_catpvs(msg, "::");
-			    }
-			    else {
-				sv_catpvn(msg, c, 1);
-			    }
-			}
-			sv_catpv(msg, " module)");
+		    if (e > name && _memEQs(e, ".pm")) {
+			const char *c;
+                        bool utf8 = cBOOL(SvUTF8(sv));
+
+                        /* if the filename, when converted from "Foo/Bar.pm"
+                         * form back to Foo::Bar form, makes a valid
+                         * package name (i.e. parseable by C<require
+                         * Foo::Bar>), then emit a hint.
+                         *
+                         * this loop is modelled after the one in
+                         S_parse_ident */
+			c = name;
+                        while (c < e) {
+                            if (utf8 && isIDFIRST_utf8_safe(c, e)) {
+                                c += UTF8SKIP(c);
+                                while (c < e && isIDCONT_utf8_safe(
+                                            (const U8*) c, (const U8*) e))
+                                    c += UTF8SKIP(c);
+                            }
+                            else if (isWORDCHAR_A(*c)) {
+                                while (c < e && isWORDCHAR_A(*c))
+                                    c++;
+                            }
+			    else if (*c == '/')
+                                c++;
+                            else
+                                break;
+                        }
+
+                        if (c == e && isIDFIRST_lazy_if_safe(name, e, utf8)) {
+                            sv_catpv(msg, " (you may need to install the ");
+                            for (c = name; c < e; c++) {
+                                if (*c == '/') {
+                                    sv_catpvs(msg, "::");
+                                }
+                                else {
+                                    sv_catpvn(msg, c, 1);
+                                }
+                            }
+                            sv_catpv(msg, " module)");
+                        }
 		    }
 		    else if (len >= 2 && memEQ(name + len - 2, ".h", 3)) {
 			sv_catpv(msg, " (change .h to .ph maybe?) (did you run h2ph?)");
@@ -4104,14 +4183,36 @@ S_require_file(pTHX_ SV *const sv)
 	    }
 	    DIE(aTHX_ "Can't locate %s", name);
 	}
+        else {
+#ifdef DEFAULT_INC_EXCLUDES_DOT
+            Stat_t st;
+            PerlIO *io = NULL;
+            dSAVE_ERRNO;
+            /* the complication is to match the logic from doopen_pm() so
+             * we don't treat do "sda1" as a previously successful "do".
+            */
+            bool do_warn = namesv && ckWARN_d(WARN_DEPRECATED)
+                && PerlLIO_stat(name, &st) == 0 && !S_ISDIR(st.st_mode) && !S_ISBLK(st.st_mode)
+                && (io = PerlIO_openn(aTHX_ ":", PERL_SCRIPT_MODE, -1, 0, 0, NULL, 1, &sv)) != NULL;
+            if (io)
+                PerlIO_close(io);
 
-	CLEAR_ERRSV();
-	RETPUSHUNDEF;
+            RESTORE_ERRNO;
+            if (do_warn) {
+                Perl_warner(aTHX_ packWARN(WARN_DEPRECATED),
+                "do \"%s\" failed, '.' is no longer in @INC; "
+                "did you mean do \"./%s\"?",
+                name, name);
+            }
+#endif
+            CLEAR_ERRSV();
+            RETPUSHUNDEF;
+        }
     }
     else
 	SETERRNO(0, SS_NORMAL);
 
-    /* Assume success here to prevent recursive requirement. */
+    /* Update %INC. Assume success here to prevent recursive requirement. */
     /* name is never assigned to again, so len is still strlen(name)  */
     /* Check whether a hook in @INC has already filled %INC */
     if (!hook_sv) {
@@ -4123,6 +4224,8 @@ S_require_file(pTHX_ SV *const sv)
 	    (void)hv_store(GvHVn(PL_incgv),
 			   unixname, unixlen, SvREFCNT_inc_simple(hook_sv), 0 );
     }
+
+    /* Now parse the file */
 
     old_savestack_ix = PL_savestack_ix;
     SAVECOPFILE_FREE(&PL_compiling);
@@ -4144,6 +4247,7 @@ S_require_file(pTHX_ SV *const sv)
     }
 
     /* switch to eval mode */
+    assert(!CATCH_GET);
     cx = cx_pushblock(CXt_EVAL, gimme, SP, old_savestack_ix);
     cx_pusheval(cx, PL_op->op_next, newSVpv(name, 0));
 
@@ -4153,7 +4257,7 @@ S_require_file(pTHX_ SV *const sv)
     PUTBACK;
 
     if (doeval_compile(gimme, NULL, PL_curcop->cop_seq, NULL))
-	op = DOCATCH(PL_eval_start);
+	op = PL_eval_start;
     else
 	op = PL_op->op_next;
 
@@ -4167,13 +4271,17 @@ S_require_file(pTHX_ SV *const sv)
 
 PP(pp_require)
 {
-    dSP;
-    SV *sv = POPs;
-    SvGETMAGIC(sv);
-    PUTBACK;
-    return ((SvNIOKp(sv) || SvVOK(sv)) && PL_op->op_type != OP_DOFILE)
-        ? S_require_version(aTHX_ sv)
-        : S_require_file(aTHX_ sv);
+    RUN_PP_CATCHABLY(Perl_pp_require);
+
+    {
+	dSP;
+	SV *sv = POPs;
+	SvGETMAGIC(sv);
+	PUTBACK;
+	return ((SvNIOKp(sv) || SvVOK(sv)) && PL_op->op_type != OP_DOFILE)
+	    ? S_require_version(aTHX_ sv)
+	    : S_require_file(aTHX_ sv);
+    }
 }
 
 
@@ -4194,17 +4302,27 @@ PP(pp_entereval)
     dSP;
     PERL_CONTEXT *cx;
     SV *sv;
-    const U8 gimme = GIMME_V;
-    const U32 was = PL_breakable_sub_gen;
+    U8 gimme;
+    U32 was;
     char tbuf[TYPE_DIGITS(long) + 12];
-    bool saved_delete = FALSE;
-    char *tmpbuf = tbuf;
+    bool saved_delete;
+    char *tmpbuf;
     STRLEN len;
     CV* runcv;
-    U32 seq, lex_flags = 0;
-    HV *saved_hh = NULL;
-    const bool bytes = PL_op->op_private & OPpEVAL_BYTES;
+    U32 seq, lex_flags;
+    HV *saved_hh;
+    bool bytes;
     I32 old_savestack_ix;
+
+    RUN_PP_CATCHABLY(Perl_pp_entereval);
+
+    gimme = GIMME_V;
+    was = PL_breakable_sub_gen;
+    saved_delete = FALSE;
+    tmpbuf = tbuf;
+    lex_flags = 0;
+    saved_hh = NULL;
+    bytes = PL_op->op_private & OPpEVAL_BYTES;
 
     if (PL_op->op_private & OPpEVAL_HAS_HH) {
 	saved_hh = MUTABLE_HV(SvREFCNT_inc(POPs));
@@ -4273,6 +4391,7 @@ PP(pp_entereval)
      * to do the dirty work for us */
     runcv = find_runcv(&seq);
 
+    assert(!CATCH_GET);
     cx = cx_pushblock((CXt_EVAL|CXp_REAL), gimme, SP, old_savestack_ix);
     cx_pusheval(cx, PL_op->op_next, NULL);
 
@@ -4302,7 +4421,7 @@ PP(pp_entereval)
 	    char *const safestr = savepvn(tmpbuf, len);
 	    SAVEDELETE(PL_defstash, safestr, len);
 	}
-	return DOCATCH(PL_eval_start);
+	return PL_eval_start;
     } else {
 	/* We have already left the scope set up earlier thanks to the LEAVE
 	   in doeval_compile().  */
@@ -4344,8 +4463,11 @@ PP(pp_leaveeval)
                     ? SvTRUE(*PL_stack_sp)
                     : PL_stack_sp > oldsp);
 
-    if (gimme == G_VOID)
+    if (gimme == G_VOID) {
         PL_stack_sp = oldsp;
+        /* free now to avoid late-called destructors clobbering $@ */
+        FREETMPS;
+    }
     else
         leave_adjust_stacks(oldsp, oldsp, gimme, 0);
 
@@ -4413,8 +4535,11 @@ Perl_create_eval_scope(pTHX_ OP *retop, U32 flags)
     
 PP(pp_entertry)
 {
+    RUN_PP_CATCHABLY(Perl_pp_entertry);
+
+    assert(!CATCH_GET);
     create_eval_scope(cLOGOP->op_other->op_next, 0);
-    return DOCATCH(PL_op->op_next);
+    return PL_op->op_next;
 }
 
 
@@ -4434,8 +4559,11 @@ PP(pp_leavetry)
     oldsp = PL_stack_base + cx->blk_oldsp;
     gimme = cx->blk_gimme;
 
-    if (gimme == G_VOID)
+    if (gimme == G_VOID) {
         PL_stack_sp = oldsp;
+        /* free now to avoid late-called destructors clobbering $@ */
+        FREETMPS;
+    }
     else
         leave_adjust_stacks(oldsp, oldsp, gimme, 1);
     CX_LEAVE_SCOPE(cx);
