@@ -172,7 +172,7 @@
 #    define MULTIPLICITY
 #  endif
 #  define tTHX	PerlInterpreter*
-#  define pTHX  tTHX my_perl PERL_UNUSED_DECL
+#  define pTHX  tTHX my_perl
 #  define aTHX	my_perl
 #  define aTHXa(a) aTHX = (tTHX)a
 #  ifdef PERL_GLOBAL_STRUCT

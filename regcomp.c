@@ -4085,6 +4085,9 @@ static void
 S_unwind_scan_frames(pTHX_ const void *p)
 {
     scan_frame *f= (scan_frame *)p;
+
+    PERL_UNUSED_CONTEXT;
+
     do {
         scan_frame *n= f->next_frame;
         Safefree(f);
@@ -10096,6 +10099,7 @@ Perl__invlistEQ(pTHX_ SV* const a, SV* const b, const bool complement_b)
     UV len_a = _invlist_len(a);
     UV len_b = _invlist_len(b);
 
+    PERL_UNUSED_CONTEXT;
     PERL_ARGS_ASSERT__INVLISTEQ;
 
     /* If are to compare 'a' with the complement of b, set it
