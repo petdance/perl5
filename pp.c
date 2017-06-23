@@ -5209,6 +5209,7 @@ PP(pp_lslice)
 
     if (GIMME_V != G_ARRAY) {
         if (lastlelem < firstlelem) {
+            EXTEND(SP, 1);
             *firstlelem = &PL_sv_undef;
         }
         else {
@@ -5682,8 +5683,11 @@ PP(pp_reverse)
 	SvUTF8_off(TARG);				/* decontaminate */
 	if (SP - MARK > 1)
 	    do_join(TARG, &PL_sv_no, MARK, SP);
-	else {
-	    sv_setsv(TARG, SP > MARK ? *SP : DEFSV);
+	else if (SP > MARK)
+	    sv_setsv(TARG, *SP);
+        else {
+	    sv_setsv(TARG, DEFSV);
+            EXTEND(SP, 1);
 	}
 
 	up = SvPV_force(TARG, len);
