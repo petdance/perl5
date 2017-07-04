@@ -470,6 +470,24 @@ S_is_utf8_cp_above_31_bits(const U8 * const s, const U8 * const e)
 
 }
 
+/* Anything larger than this will overflow the word if it were converted into a UV */
+#if defined(UV_IS_QUAD)
+#  ifdef EBCDIC     /* Actually is I8 */
+#   define HIGHEST_REPRESENTABLE_UTF8                                       \
+                "\xFF\xAF\xBF\xBF\xBF\xBF\xBF\xBF\xBF\xBF\xBF\xBF\xBF\xBF"
+#  else
+#   define HIGHEST_REPRESENTABLE_UTF8                                       \
+                "\xFF\x80\x8F\xBF\xBF\xBF\xBF\xBF\xBF\xBF\xBF\xBF\xBF"
+#  endif
+#else   /* 32-bit */
+#  ifdef EBCDIC
+#   define HIGHEST_REPRESENTABLE_UTF8                                       \
+                "\xFF\xA0\xA0\xA0\xA0\xA0\xA0\xA3\xBF\xBF\xBF\xBF\xBF\xBF"
+#  else
+#   define HIGHEST_REPRESENTABLE_UTF8  "\xFE\x83\xBF\xBF\xBF\xBF\xBF"
+#  endif
+#endif
+
 PERL_STATIC_INLINE bool
 S_does_utf8_overflow(const U8 * const s, const U8 * e)
 {
@@ -1006,6 +1024,9 @@ The input C<curlen> parameter was 0.
 The input sequence was malformed in that there is some other sequence that
 evaluates to the same code point, but that sequence is shorter than this one.
 
+Until Unicode 3.1, it was legal for programs to accept this malformation, but
+it was discovered that this created security issues.
+
 =item C<UTF8_GOT_NONCHAR>
 
 The code point represented by the input UTF-8 sequence is for a Unicode
@@ -1407,7 +1428,7 @@ Perl_utf8n_to_uvchr_error(pTHX_ const U8 *s,
                         if (pack_warn) {
                             message = Perl_form(aTHX_ "%s: %s (overflows)",
                                             malformed_text,
-                                            _byte_dump_string(s0, send - s0, 0));
+                                            _byte_dump_string(s0, curlen, 0));
                         }
                     }
                 }
@@ -1533,7 +1554,7 @@ Perl_utf8n_to_uvchr_error(pTHX_ const U8 *s,
                                 "%s: %s (overlong; instead use %s to represent"
                                 " U+%0*" UVXf ")",
                                 malformed_text,
-                                _byte_dump_string(s0, send - s0, 0),
+                                _byte_dump_string(s0, curlen, 0),
                                 _byte_dump_string(tmpbuf, e - tmpbuf, 0),
                                 ((uv < 256) ? 2 : 4), /* Field width of 2 for
                                                          small code points */

@@ -1715,7 +1715,7 @@ EXMp	|void	|_invlist_dump	|NN PerlIO *file|I32 level   \
 #endif
 Ap	|void	|taint_env
 Ap	|void	|taint_proper	|NULLOK const char* f|NN const char *const s
-pM	|char *	|_byte_dump_string					\
+EpM	|char *	|_byte_dump_string					\
 				|NN const U8 * s			\
 				|const STRLEN len			\
 				|const bool format
@@ -2080,7 +2080,7 @@ po	|SV*	|hfree_next_entry	|NN HV *hv|NN STRLEN *indexp
 
 #if defined(PERL_IN_HV_C)
 s	|void	|hsplit		|NN HV *hv|STRLEN const oldsize|STRLEN newsize
-s	|void	|hfreeentries	|NN HV *hv
+s	|void	|hv_free_entries|NN HV *hv
 s	|SV*	|hv_free_ent_ret|NN HV *hv|NN HE *entry
 sR	|HE*	|new_he
 sanR	|HEK*	|save_hek_flags	|NN const char *str|I32 len|U32 hash|int flags

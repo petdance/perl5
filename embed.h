@@ -937,6 +937,7 @@
 #define do_spawn_nowait(a)	Perl_do_spawn_nowait(aTHX_ a)
 #endif
 #if defined(PERL_CORE) || defined(PERL_EXT)
+#define _byte_dump_string(a,b,c)	Perl__byte_dump_string(aTHX_ a,b,c)
 #define _warn_problematic_locale	Perl__warn_problematic_locale
 #define append_utf8_from_native_byte	S_append_utf8_from_native_byte
 #define av_reify(a)		Perl_av_reify(aTHX_ a)
@@ -1162,7 +1163,6 @@
 #ifdef PERL_CORE
 #define Slab_Alloc(a)		Perl_Slab_Alloc(aTHX_ a)
 #define Slab_Free(a)		Perl_Slab_Free(aTHX_ a)
-#define _byte_dump_string(a,b,c)	Perl__byte_dump_string(aTHX_ a,b,c)
 #define abort_execution(a,b)	Perl_abort_execution(aTHX_ a,b)
 #define alloc_LOGOP(a,b,c)	Perl_alloc_LOGOP(aTHX_ a,b,c)
 #define allocmy(a,b,c)		Perl_allocmy(aTHX_ a,b,c)
@@ -1574,12 +1574,12 @@
 #  endif
 #  if defined(PERL_IN_HV_C)
 #define clear_placeholders(a,b)	S_clear_placeholders(aTHX_ a,b)
-#define hfreeentries(a)		S_hfreeentries(aTHX_ a)
 #define hsplit(a,b,c)		S_hsplit(aTHX_ a,b,c)
 #define hv_auxinit(a)		S_hv_auxinit(aTHX_ a)
 #define hv_auxinit_internal	S_hv_auxinit_internal
 #define hv_delete_common(a,b,c,d,e,f,g)	S_hv_delete_common(aTHX_ a,b,c,d,e,f,g)
 #define hv_free_ent_ret(a,b)	S_hv_free_ent_ret(aTHX_ a,b)
+#define hv_free_entries(a)	S_hv_free_entries(aTHX_ a)
 #define hv_magic_check		S_hv_magic_check
 #define hv_notallowed(a,b,c,d)	S_hv_notallowed(aTHX_ a,b,c,d)
 #define new_he()		S_new_he(aTHX)
