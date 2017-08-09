@@ -316,7 +316,10 @@ sub changes_between {
     5.026000 => '2017-05-30',
     5.027000 => '2017-05-31',
     5.027001 => '2017-06-20',
+    5.022004 => '2017-07-15',
+    5.024002 => '2017-07-15',
     5.027002 => '2017-07-20',
+    5.027003 => '2017-08-20',
   );
 
 for my $version ( sort { $a <=> $b } keys %released ) {
@@ -14268,15 +14271,106 @@ for my $version ( sort { $a <=> $b } keys %released ) {
         removed => {
         }
     },
+    5.022004 => {
+        delta_from => 5.022003,
+        changed => {
+            'B::Op_private'         => '5.022004',
+            'Config'                => '5.022004',
+            'Module::CoreList'      => '5.20170715_22',
+            'Module::CoreList::TieHashDelta'=> '5.20170715_22',
+            'Module::CoreList::Utils'=> '5.20170715_22',
+            'base'                  => '2.22_01',
+        },
+        removed => {
+        }
+    },
+    5.024002 => {
+        delta_from => 5.024001,
+        changed => {
+            'B::Op_private'         => '5.024002',
+            'Config'                => '5.024002',
+            'Module::CoreList'      => '5.20170715_24',
+            'Module::CoreList::TieHashDelta'=> '5.20170715_24',
+            'Module::CoreList::Utils'=> '5.20170715_24',
+            'base'                  => '2.23_01',
+        },
+        removed => {
+        }
+    },
     5.027002 => {
         delta_from => 5.027001,
         changed => {
             'B::Op_private'         => '5.027002',
+            'Carp'                  => '1.43',
+            'Carp::Heavy'           => '1.43',
             'Config'                => '5.027002',
+            'Cwd'                   => '3.68',
+            'Encode'                => '2.92',
+            'Encode::Alias'         => '2.23',
+            'Encode::CN::HZ'        => '2.09',
+            'Encode::Encoding'      => '2.08',
+            'Encode::GSM0338'       => '2.07',
+            'Encode::Guess'         => '2.07',
+            'Encode::JP::JIS7'      => '2.07',
+            'Encode::KR::2022_KR'   => '2.04',
+            'Encode::MIME::Header'  => '2.27',
+            'Encode::MIME::Header::ISO_2022_JP'=> '1.09',
+            'Encode::Unicode'       => '2.16',
+            'Encode::Unicode::UTF7' => '2.10',
+            'ExtUtils::CBuilder'    => '0.280228',
+            'ExtUtils::CBuilder::Base'=> '0.280228',
+            'ExtUtils::CBuilder::Platform::Unix'=> '0.280228',
+            'ExtUtils::CBuilder::Platform::VMS'=> '0.280228',
+            'ExtUtils::CBuilder::Platform::Windows'=> '0.280228',
+            'ExtUtils::CBuilder::Platform::Windows::BCC'=> '0.280228',
+            'ExtUtils::CBuilder::Platform::Windows::GCC'=> '0.280228',
+            'ExtUtils::CBuilder::Platform::Windows::MSVC'=> '0.280228',
+            'ExtUtils::CBuilder::Platform::aix'=> '0.280228',
+            'ExtUtils::CBuilder::Platform::android'=> '0.280228',
+            'ExtUtils::CBuilder::Platform::cygwin'=> '0.280228',
+            'ExtUtils::CBuilder::Platform::darwin'=> '0.280228',
+            'ExtUtils::CBuilder::Platform::dec_osf'=> '0.280228',
+            'ExtUtils::CBuilder::Platform::os2'=> '0.280228',
+            'File::Glob'            => '1.29',
+            'File::Spec'            => '3.68',
+            'File::Spec::AmigaOS'   => '3.68',
+            'File::Spec::Cygwin'    => '3.68',
+            'File::Spec::Epoc'      => '3.68',
+            'File::Spec::Functions' => '3.68',
+            'File::Spec::Mac'       => '3.68',
+            'File::Spec::OS2'       => '3.68',
+            'File::Spec::Unix'      => '3.68',
+            'File::Spec::VMS'       => '3.68',
+            'File::Spec::Win32'     => '3.68',
+            'List::Util'            => '1.48',
+            'List::Util::XS'        => '1.48',
+            'Math::BigRat'          => '0.2613',
             'Module::CoreList'      => '5.20170720',
             'Module::CoreList::TieHashDelta'=> '5.20170720',
             'Module::CoreList::Utils'=> '5.20170720',
+            'Opcode'                => '1.40',
+            'POSIX'                 => '1.77',
+            'PerlIO::scalar'        => '0.29',
+            'Scalar::Util'          => '1.48',
+            'Sub::Util'             => '1.48',
+            'Time::HiRes'           => '1.9743',
+            'Time::Piece'           => '1.3201',
+            'Time::Seconds'         => '1.3201',
             'Unicode'               => '10.0.0',
+            'XS::APItest'           => '0.90',
+            'arybase'               => '0.13',
+            'encoding'              => '2.20',
+            'feature'               => '1.49',
+            're'                    => '0.35',
+        },
+        removed => {
+        }
+    },
+    5.027003 => {
+        delta_from => 5.027002,
+        changed => {
+            'B::Op_private'         => '5.027003',
+            'Config'                => '5.027003',
         },
         removed => {
         }
@@ -15052,8 +15146,29 @@ sub is_core
         removed => {
         }
     },
+    5.022004 => {
+        delta_from => 5.022003,
+        changed => {
+        },
+        removed => {
+        }
+    },
+    5.024002 => {
+        delta_from => 5.024001,
+        changed => {
+        },
+        removed => {
+        }
+    },
     5.027002 => {
         delta_from => 5.027001,
+        changed => {
+        },
+        removed => {
+        }
+    },
+    5.027003 => {
+        delta_from => 5.027002,
         changed => {
         },
         removed => {

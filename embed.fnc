@@ -744,7 +744,11 @@ ADMpR	|bool	|isALNUM_lazy	|NN const char* p
 #ifdef PERL_IN_UTF8_C
 snR	|U8	|to_lower_latin1|const U8 c|NULLOK U8 *p|NULLOK STRLEN *lenp  \
 		|const char dummy
-inR	|bool	|is_utf8_cp_above_31_bits|NN const U8 * const s|NN const U8 * const e
+#  ifndef UV_IS_QUAD
+snR	|int	|is_utf8_cp_above_31_bits|NN const U8 * const s		    \
+					 |NN const U8 * const e		    \
+					 |const bool consider_overlongs
+#  endif
 #endif
 #if defined(PERL_IN_UTF8_C) || defined(PERL_IN_REGCOMP_C) || defined(PERL_IN_REGEXEC_C)
 EXp	|UV        |_to_fold_latin1|const U8 c|NN U8 *p|NN STRLEN *lenp|const unsigned int flags
@@ -1174,10 +1178,11 @@ Apd	|OP*	|ck_entersub_args_proto_or_list|NN OP *entersubop|NN GV *namegv|NN SV *
 po	|OP*	|ck_entersub_args_core|NN OP *entersubop|NN GV *namegv \
 				      |NN SV *protosv
 Apd	|void	|cv_get_call_checker|NN CV *cv|NN Perl_call_checker *ckfun_p|NN SV **ckobj_p
+Apd	|void	|cv_get_call_checker_flags|NN CV *cv|U32 gflags|NN Perl_call_checker *ckfun_p|NN SV **ckobj_p|NN U32 *ckflags_p
 Apd	|void	|cv_set_call_checker|NN CV *cv|NN Perl_call_checker ckfun|NN SV *ckobj
 Apd	|void	|cv_set_call_checker_flags|NN CV *cv \
 					  |NN Perl_call_checker ckfun \
-					  |NN SV *ckobj|U32 flags
+					  |NN SV *ckobj|U32 ckflags
 Apd	|void	|wrap_op_checker|Optype opcode|NN Perl_check_t new_checker|NN Perl_check_t *old_checker_p
 ApR	|PERL_SI*|new_stackinfo|I32 stitems|I32 cxitems
 Ap	|char*	|scan_vstring	|NN const char *s|NN const char *const e \
@@ -1251,21 +1256,14 @@ ApdO	|AV*	|get_av		|NN const char *name|I32 flags
 ApdO	|HV*	|get_hv		|NN const char *name|I32 flags
 ApdO	|CV*	|get_cv		|NN const char* name|I32 flags
 Apd	|CV*	|get_cvn_flags	|NN const char* name|STRLEN len|I32 flags
-#ifdef WIN32
-ApM	|char*	|my_setlocale	|int category|NULLOK const char* locale
-#else
-AmM	|char*	|my_setlocale	|int category|NULLOK const char* locale
-#endif
+EXnpo	|char*	|setlocale	|int category|NULLOK const char* locale
 ApOM	|int	|init_i18nl10n	|int printwarn
 ApOM	|int	|init_i18nl14n	|int printwarn
-ApM	|char*	|my_strerror	|const int errnum
-ApOM	|void	|new_collate	|NULLOK const char* newcoll
-ApOM	|void	|new_ctype	|NN const char* newctype
-EXpMn	|void	|_warn_problematic_locale
-ApOM	|void	|new_numeric	|NULLOK const char* newcoll
-Ap	|void	|set_numeric_local
-Ap	|void	|set_numeric_radix
-Ap	|void	|set_numeric_standard
+p	|char*	|my_strerror	|const int errnum
+Xpn	|void	|_warn_problematic_locale
+p	|void	|new_numeric	|NULLOK const char* newcoll
+Xp	|void	|set_numeric_local
+Xp	|void	|set_numeric_standard
 ApM	|bool	|_is_in_locale_category|const bool compiling|const int category
 Apd	|void	|sync_locale
 ApdO	|void	|require_pv	|NN const char* pv
@@ -1301,7 +1299,7 @@ Ap	|I32	|pregexec	|NN REGEXP * const prog|NN char* stringarg \
 Ap	|void	|pregfree	|NULLOK REGEXP* r
 Ap	|void	|pregfree2	|NN REGEXP *rx
 : FIXME - is anything in re using this now?
-EXp	|REGEXP*|reg_temp_copy	|NULLOK REGEXP* ret_x|NN REGEXP* rx
+EXp	|REGEXP*|reg_temp_copy	|NULLOK REGEXP* dsv|NN REGEXP* ssv
 Ap	|void	|regfree_internal|NN REGEXP *const rx
 #if defined(USE_ITHREADS)
 Ap	|void*	|regdupe_internal|NN REGEXP * const r|NN CLONE_PARAMS* param
@@ -1720,9 +1718,12 @@ EpM	|char *	|_byte_dump_string					\
 				|const STRLEN len			\
 				|const bool format
 #if defined(PERL_IN_UTF8_C)
-inR	|bool	|does_utf8_overflow|NN const U8 * const s|NN const U8 * e
-inR	|bool	|is_utf8_overlong_given_start_byte_ok|NN const U8 * const s|const STRLEN len
-inR	|bool	|isFF_OVERLONG	|NN const U8 * const s|const STRLEN len
+inR	|int	|does_utf8_overflow|NN const U8 * const s		\
+				   |NN const U8 * e			\
+				   |const bool consider_overlongs
+inR	|int	|is_utf8_overlong_given_start_byte_ok|NN const U8 * const s \
+						     |const STRLEN len
+inR	|int	|isFF_OVERLONG	|NN const U8 * const s|const STRLEN len
 sMR	|char *	|unexpected_non_continuation_text			\
 		|NN const U8 * const s					\
 		|STRLEN print_len					\
@@ -2715,23 +2716,30 @@ s	|bool	|isa_lookup	|NN HV *stash|NN const char * const name \
 
 #if defined(USE_LOCALE) && defined(PERL_IN_LOCALE_C)
 s	|char*	|stdize_locale	|NN char* locs
+s	|void	|new_collate	|NULLOK const char* newcoll
+s	|void	|new_ctype	|NN const char* newctype
+s	|void	|set_numeric_radix
+#ifdef WIN32
+s	|char*	|my_setlocale	|int category|NULLOK const char* locale
+#endif
 #   ifdef DEBUGGING
 s	|void	|print_collxfrm_input_and_return		\
 			    |NN const char * const s		\
 			    |NN const char * const e		\
 			    |NULLOK const STRLEN * const xlen	\
 			    |const bool is_utf8
+s	|void	|print_bytes_for_locale	|NN const char * const s	\
+					|NN const char * const e	\
+					|const bool is_utf8
+snR	|char *	|setlocale_debug_string	|const int category		    \
+					|NULLOK const char* const locale    \
+					|NULLOK const char* const retval
 #   endif
 #endif
 
-#if defined(USE_LOCALE) \
+#if     defined(USE_LOCALE) \
     && (defined(PERL_IN_LOCALE_C) || defined (PERL_EXT_POSIX))
 ApM	|bool	|_is_cur_LC_category_utf8|int category
-#	ifdef DEBUGGING
-AMnpR	|char *	|_setlocale_debug_string|const int category		    \
-					|NULLOK const char* const locale    \
-					|NULLOK const char* const retval
-#	endif
 #endif
 
 
@@ -2936,6 +2944,7 @@ Apod	|void	|hv_assert	|NN HV *hv
 #endif
 
 ApdR	|SV*	|hv_scalar	|NN HV *hv
+p	|void	|hv_pushkv	|NN HV *hv|U32 flags
 ApdRM	|SV*	|hv_bucket_ratio|NN HV *hv
 ApoR	|I32*	|hv_riter_p	|NN HV *hv
 ApoR	|HE**	|hv_eiter_p	|NN HV *hv

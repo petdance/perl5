@@ -417,11 +417,11 @@ sub DEFINE {
 }
 
 sub init {
-    my $hints = File::Spec->catfile(".", "hints", "$^O.pl");
+    my $hints = File::Spec->catfile("hints", "$^O.pl");
     if (-f $hints) {
 	print "Using hints $hints...\n";
 	local $self;
-	do $hints;
+	do "./$hints";
 	if (exists $self->{LIBS}) {
 	    $LIBS = $self->{LIBS};
 	    print "Extra libraries: @$LIBS...\n";
@@ -936,7 +936,7 @@ sub doMakefile {
     }
 
     if ($ExtUtils::MakeMaker::VERSION >= 6.48) {
-	push @makefileopts, (MIN_PERL_VERSION => '5.008',);
+	push @makefileopts, (MIN_PERL_VERSION => '5.006',);
     }
 
     if ($ExtUtils::MakeMaker::VERSION >= 6.31) {
