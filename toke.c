@@ -2702,6 +2702,9 @@ S_get_and_check_backslash_N_name(pTHX_ const char* s, const char* const e)
         }
     }
     if (*(s-1) == ' ') {
+        /* diag_listed_as: charnames alias definitions may not contain
+                           trailing white-space; marked by <-- HERE in %s
+         */
         yyerror_pv(
             Perl_form(aTHX_
             "charnames alias definitions may not contain trailing "
@@ -2724,6 +2727,8 @@ S_get_and_check_backslash_N_name(pTHX_ const char* s, const char* const e)
                                               (U8 *) PL_parser->bufend,
                                               0,
                                               0 /* 0 means don't die */ );
+            /* diag_listed_as: Malformed UTF-8 returned by \N{%s}
+                               immediately after '%s' */
             yyerror_pv(
               Perl_form(aTHX_
                 "Malformed UTF-8 returned by %.*s immediately after '%.*s'",
@@ -2741,6 +2746,8 @@ S_get_and_check_backslash_N_name(pTHX_ const char* s, const char* const e)
 
         /* The final %.*s makes sure that should the trailing NUL be missing
          * that this print won't run off the end of the string */
+        /* diag_listed_as: Invalid character in \N{...}; marked by <-- HERE
+                           in \N{%s} */
         yyerror_pv(
           Perl_form(aTHX_
             "Invalid character in \\N{...}; marked by <-- HERE in %.*s<-- HERE %.*s",
@@ -2752,6 +2759,9 @@ S_get_and_check_backslash_N_name(pTHX_ const char* s, const char* const e)
     }
 
   multi_spaces:
+        /* diag_listed_as: charnames alias definitions may not contain a
+                           sequence of multiple spaces; marked by <-- HERE
+                           in %s */
         yyerror_pv(
           Perl_form(aTHX_
             "charnames alias definitions may not contain a sequence of "
@@ -4613,6 +4623,7 @@ S_tokenize_use(pTHX_ int is_use, char *s) {
     PERL_ARGS_ASSERT_TOKENIZE_USE;
 
     if (PL_expect != XSTATE)
+	/* diag_listed_as: "use" not allowed in expression */
 	yyerror(Perl_form(aTHX_ "\"%s\" not allowed in expression",
 		    is_use ? "use" : "no"));
     PL_expect = XTERM;
@@ -5158,12 +5169,23 @@ Perl_yylex(pTHX)
         else {
             c = Perl_form(aTHX_ "\\x%02X", (unsigned char)*s);
         }
-        len = UTF ? Perl_utf8_length(aTHX_ (U8 *) PL_linestart, (U8 *) s) : (STRLEN) (s - PL_linestart);
-        if (len > UNRECOGNIZED_PRECEDE_COUNT) {
-            d = UTF ? (char *) utf8_hop_back((U8 *) s, -UNRECOGNIZED_PRECEDE_COUNT, (U8 *)PL_linestart) : s - UNRECOGNIZED_PRECEDE_COUNT;
-        } else {
+
+        if (s >= PL_linestart) {
             d = PL_linestart;
         }
+        else {
+            /* somehow (probably due to a parse failure), PL_linestart has advanced
+             * pass PL_bufptr, get a reasonable beginning of line
+             */
+            d = s;
+            while (d > SvPVX(PL_linestr) && d[-1] && d[-1] != '\n')
+                --d;
+        }
+        len = UTF ? Perl_utf8_length(aTHX_ (U8 *) d, (U8 *) s) : (STRLEN) (s - d);
+        if (len > UNRECOGNIZED_PRECEDE_COUNT) {
+            d = UTF ? (char *) utf8_hop_back((U8 *) s, -UNRECOGNIZED_PRECEDE_COUNT, (U8 *)d) : s - UNRECOGNIZED_PRECEDE_COUNT;
+        }
+
         Perl_croak(aTHX_  "Unrecognized character %s; marked by <-- HERE after %" UTF8f "<-- HERE near column %d", c,
                           UTF8fARG(UTF, (s - d), d),
                          (int) len + 1);
@@ -8847,8 +8869,11 @@ S_pending_ident(pTHX)
     if (PL_in_my) {
         if (PL_in_my == KEY_our) {	/* "our" is merely analogous to "my" */
             if (has_colon)
+                /* diag_listed_as: No package name allowed for variable %s
+                                   in "our" */
                 yyerror_pv(Perl_form(aTHX_ "No package name allowed for "
-                                  "variable %s in \"our\"",
+                                  "%se %s in \"our\"",
+                                  *PL_tokenbuf=='&' ?"subroutin":"variabl",
                                   PL_tokenbuf), UTF ? SVf_UTF8 : 0);
             tmp = allocmy(PL_tokenbuf, tokenbuf_len, UTF ? SVf_UTF8 : 0);
         }
@@ -9352,19 +9377,36 @@ S_scan_ident(pTHX_ char *s, char *dest, STRLEN destlen, I32 ck_uni)
         bool skip;
         char *s2;
         /* If we were processing {...} notation then...  */
-        if (isIDFIRST_lazy_if_safe(d, e, is_utf8)) {
-            /* if it starts as a valid identifier, assume that it is one.
-               (the later check for } being at the expected point will trap
-               cases where this doesn't pan out.)  */
-            d += is_utf8 ? UTF8SKIP(d) : 1;
-            parse_ident(&s, &d, e, 1, is_utf8, TRUE);
-	    *d = '\0';
+        if (isIDFIRST_lazy_if_safe(d, e, is_utf8)
+            || (!isPRINT(*d) /* isCNTRL(d), plus all non-ASCII */
+                 && isWORDCHAR(*s))
+        ) {
+            /* note we have to check for a normal identifier first,
+             * as it handles utf8 symbols, and only after that has
+             * been ruled out can we look at the caret words */
+            if (isIDFIRST_lazy_if_safe(d, e, is_utf8) ) {
+                /* if it starts as a valid identifier, assume that it is one.
+                   (the later check for } being at the expected point will trap
+                   cases where this doesn't pan out.)  */
+                d += is_utf8 ? UTF8SKIP(d) : 1;
+                parse_ident(&s, &d, e, 1, is_utf8, TRUE);
+                *d = '\0';
+            }
+            else { /* caret word: ${^Foo} ${^CAPTURE[0]} */
+                d++;
+                while (isWORDCHAR(*s) && d < e) {
+                    *d++ = *s++;
+                }
+                if (d >= e)
+                    Perl_croak(aTHX_ "%s", ident_too_long);
+                *d = '\0';
+            }
             tmp_copline = CopLINE(PL_curcop);
             if (s < PL_bufend && isSPACE(*s)) {
                 s = skipspace(s);
             }
 	    if ((*s == '[' || (*s == '{' && strNE(dest, "sub")))) {
-                /* ${foo[0]} and ${foo{bar}} notation.  */
+                /* ${foo[0]} and ${foo{bar}} and ${^CAPTURE[0]} notation.  */
 		if (ckWARN(WARN_AMBIGUOUS) && keyword(dest, d - dest, 0)) {
 		    const char * const brack =
 			(const char *)
@@ -9382,19 +9424,6 @@ S_scan_ident(pTHX_ char *s, char *dest, STRLEN destlen, I32 ck_uni)
 		PL_lex_allbrackets++;
 		return s;
 	    }
-	}
-	/* Handle extended ${^Foo} variables
-	 * 1999-02-27 mjd-perl-patch@plover.com */
-	else if (! isPRINT(*d) /* isCNTRL(d), plus all non-ASCII */
-		 && isWORDCHAR(*s))
-	{
-	    d++;
-	    while (isWORDCHAR(*s) && d < e) {
-		*d++ = *s++;
-	    }
-	    if (d >= e)
-		Perl_croak(aTHX_ "%s", ident_too_long);
-	    *d = '\0';
 	}
 
         if ( !tmp_copline )
@@ -11177,9 +11206,11 @@ Perl_scan_num(pTHX_ const char *start, YYSTYPE* lvalp)
               || UNLIKELY(hexfp && isALPHA_FOLD_EQ(*s, 'p')))
             && strchr("+-0123456789_", s[1]))
         {
-            floatit = TRUE;
+            int exp_digits = 0;
+            const char *save_s = s;
+            char * save_d = d;
 
-	    /* regardless of whether user said 3E5 or 3e5, use lower 'e',
+            /* regardless of whether user said 3E5 or 3e5, use lower 'e',
                ditto for p (hexfloats) */
             if ((isALPHA_FOLD_EQ(*s, 'e'))) {
 		/* At least some Mach atof()s don't grok 'E' */
@@ -11211,6 +11242,7 @@ Perl_scan_num(pTHX_ const char *start, YYSTYPE* lvalp)
 	    /* read digits of exponent */
 	    while (isDIGIT(*s) || *s == '_') {
 	        if (isDIGIT(*s)) {
+                    ++exp_digits;
 		    if (d >= e)
 		        Perl_croak(aTHX_ "%s", number_too_long);
 		    *d++ = *s++;
@@ -11222,6 +11254,20 @@ Perl_scan_num(pTHX_ const char *start, YYSTYPE* lvalp)
 		   lastub = s++;
 		}
 	    }
+
+            if (!exp_digits) {
+                /* no exponent digits, the [eEpP] could be for something else,
+                 * though in practice we don't get here for p since that's preparsed
+                 * earlier, and results in only the 0xX being consumed, so behave similarly
+                 * for decimal floats and consume only the D.DD, leaving the [eE] to the
+                 * next token.
+                 */
+                s = save_s;
+                d = save_d;
+            }
+            else {
+                floatit = TRUE;
+            }
 	}
 
 

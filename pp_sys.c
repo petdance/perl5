@@ -655,7 +655,7 @@ PP(pp_open)
     if (ok)
 	PUSHi( (I32)PL_forkprocess );
     else if (PL_forkprocess == 0)		/* we are a new child */
-	PUSHi(0);
+	PUSHs(&PL_sv_zero);
     else
 	RETPUSHUNDEF;
     RETURN;
@@ -664,6 +664,8 @@ PP(pp_open)
 PP(pp_close)
 {
     dSP;
+    /* pp_coreargs pushes a NULL to indicate no args passed to
+     * CORE::close() */
     GV * const gv =
 	MAXARG == 0 || (!TOPs && !POPs) ? PL_defoutgv : MUTABLE_GV(POPs);
 
@@ -1149,6 +1151,7 @@ PP(pp_sselect)
     struct timeval *tbuf = &timebuf;
     I32 growsize;
     char *fd_sets[4];
+    SV *svs[4];
 #if BYTEORDER != 0x1234 && BYTEORDER != 0x12345678
 	I32 masksize;
 	I32 offset;
@@ -1164,7 +1167,7 @@ PP(pp_sselect)
 
     SP -= 4;
     for (i = 1; i <= 3; i++) {
-	SV * const sv = SP[i];
+	SV * const sv = svs[i] = SP[i];
 	SvGETMAGIC(sv);
 	if (!SvOK(sv))
 	    continue;
@@ -1177,9 +1180,14 @@ PP(pp_sselect)
 	    if (!SvPOKp(sv))
 		Perl_ck_warner(aTHX_ packWARN(WARN_MISC),
 				    "Non-string passed as bitmask");
-	    SvPV_force_nomg_nolen(sv);	/* force string conversion */
+	    if (SvGAMAGIC(sv)) {
+		svs[i] = sv_newmortal();
+		sv_copypv_nomg(svs[i], sv);
+	    }
+	    else
+		SvPV_force_nomg_nolen(sv); /* force string conversion */
 	}
-	j = SvCUR(sv);
+	j = SvCUR(svs[i]);
 	if (maxlen < j)
 	    maxlen = j;
     }
@@ -1228,7 +1236,7 @@ PP(pp_sselect)
 	tbuf = NULL;
 
     for (i = 1; i <= 3; i++) {
-	sv = SP[i];
+	sv = svs[i];
 	if (!SvOK(sv) || SvCUR(sv) == 0) {
 	    fd_sets[i] = 0;
 	    continue;
@@ -1275,7 +1283,7 @@ PP(pp_sselect)
 #endif
     for (i = 1; i <= 3; i++) {
 	if (fd_sets[i]) {
-	    sv = SP[i];
+	    sv = svs[i];
 #if BYTEORDER != 0x1234 && BYTEORDER != 0x12345678
 	    s = SvPVX(sv);
 	    for (offset = 0; offset < growsize; offset += masksize) {
@@ -1284,7 +1292,10 @@ PP(pp_sselect)
 	    }
 	    Safefree(fd_sets[i]);
 #endif
-	    SvSETMAGIC(sv);
+	    if (sv != SP[i])
+		SvSetMagicSV(SP[i], sv);
+	    else
+		SvSETMAGIC(sv);
 	}
     }
 
@@ -1360,6 +1371,8 @@ PP(pp_select)
 PP(pp_getc)
 {
     dSP; dTARGET;
+    /* pp_coreargs pushes a NULL to indicate no args passed to
+     * CORE::getc() */
     GV * const gv =
 	MAXARG==0 || (!TOPs && !POPs) ? PL_stdingv : MUTABLE_GV(POPs);
     IO *const io = GvIO(gv);
@@ -3284,7 +3297,7 @@ PP(pp_ftis)
 	    break;
 	}
 	SvSETMAGIC(TARG);
-	return SvTRUE_nomg(TARG)
+	return SvTRUE_nomg_NN(TARG)
             ? S_ft_return_true(aTHX_ TARG) : S_ft_return_false(aTHX_ TARG);
     }
 }
@@ -3651,7 +3664,7 @@ PP(pp_chdir)
                                 "chdir() on unopened filehandle %" SVf, sv);
                 }
                 SETERRNO(EBADF,RMS_IFI);
-                PUSHi(0);
+                PUSHs(&PL_sv_zero);
                 TAINT_PROPER("chdir");
                 RETURN;
             }
@@ -3674,7 +3687,7 @@ PP(pp_chdir)
             tmps = SvPV_nolen_const(*svp);
         }
         else {
-            PUSHi(0);
+            PUSHs(&PL_sv_zero);
             SETERRNO(EINVAL, LIB_INVARG);
             TAINT_PROPER("chdir");
             RETURN;
@@ -3719,7 +3732,7 @@ PP(pp_chdir)
  nuts:
     report_evil_fh(gv);
     SETERRNO(EBADF,RMS_IFI);
-    PUSHi(0);
+    PUSHs(&PL_sv_zero);
     RETURN;
 #endif
 }
@@ -4862,7 +4875,7 @@ PP(pp_sleep)
           Perl_ck_warner_d(aTHX_ packWARN(WARN_MISC),
                            "sleep() with negative argument");
           SETERRNO(EINVAL, LIB_INVARG);
-          XPUSHi(0);
+          XPUSHs(&PL_sv_zero);
           RETURN;
         } else {
           PerlProc_sleep((unsigned int)duration);

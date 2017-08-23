@@ -5,7 +5,10 @@ use File::Temp 'tempdir';
 use File::Spec::Functions;
 use Test::More;
 use Time::HiRes qw(time);
+use Config;
 
+plan skip_all => 'This platform doesn\'t use File::Glob'
+                    if $Config{ccflags} =~ /\b{wb}-DPERL_EXTERNAL_GLOB\b{wb}/;
 plan tests => 13;
 
 my $path = tempdir uc cleanup => 1;
@@ -24,6 +27,9 @@ my @files= (
     "wtttttttetttttttwr", # 11
 );
 
+
+# VMS needs a real extension.
+map { $_ .= '.tmp' } @files if $^O eq 'VMS';
 
 foreach (@files) {
     open(my $f, ">", catfile $path, $_);
@@ -49,8 +55,13 @@ while (++$count < 10) {
 is $count,10,
     "tried all the patterns without bailing out";
 
-cmp_ok $elapsed_fail/$elapsed_match,"<",2,
-    "time to fail less than twice the time to match";
+SKIP: {
+    skip "unstable timing", 1 unless $elapsed_match && $elapsed_fail;
+    ok $elapsed_fail <= 10 * $elapsed_match,
+        "time to fail less than 10x the time to match"
+        or diag("elapsed_match=$elapsed_match elapsed_fail=$elapsed_fail");
+}
+
 is "@got_files", catfile($path, $files[0]),
     "only got the expected file for xa*..b";
 is "@no_files", "", "shouldnt have files for xa*..c";
