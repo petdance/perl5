@@ -286,6 +286,14 @@ perl_construct(pTHXx)
     PL_localpatches = local_patches;	/* For possible -v */
 #endif
 
+#if defined(LIBM_LIB_VERSION)
+    /*
+     * Some BSDs and Cygwin default to POSIX math instead of IEEE.
+     * This switches them over to IEEE.
+     */
+    _LIB_VERSION = _IEEE_;
+#endif
+
 #ifdef HAVE_INTERP_INTERN
     sys_intern_init();
 #endif
@@ -448,7 +456,7 @@ perl_construct(pTHXx)
     PL_WB_invlist = _new_invlist_C_array(_Perl_WB_invlist);
     PL_LB_invlist = _new_invlist_C_array(_Perl_LB_invlist);
     PL_Assigned_invlist = _new_invlist_C_array(Assigned_invlist);
-#ifdef USE_THREAD_SAFE_LOCALE
+#ifdef HAS_POSIX_2008_LOCALE
     PL_C_locale_obj = newlocale(LC_ALL_MASK, "C", NULL);
 #endif
 
@@ -1286,6 +1294,11 @@ perl_destruct(pTHXx)
     sv_clear(&PL_sv_no);
     SvANY(&PL_sv_no) = NULL;
     SvFLAGS(&PL_sv_no) = 0;
+
+    SvREFCNT(&PL_sv_zero) = 0;
+    sv_clear(&PL_sv_zero);
+    SvANY(&PL_sv_zero) = NULL;
+    SvFLAGS(&PL_sv_zero) = 0;
 
     {
         int i;
@@ -4161,6 +4174,9 @@ Perl_init_stacks(pTHX)
     PL_curstackinfo = new_stackinfo(REASONABLE(128),
 				 REASONABLE(8192/sizeof(PERL_CONTEXT) - 1));
     PL_curstackinfo->si_type = PERLSI_MAIN;
+#if defined DEBUGGING && !defined DEBUGGING_RE_ONLY
+    PL_curstackinfo->si_stack_hwm = 0;
+#endif
     PL_curstack = PL_curstackinfo->si_stack;
     PL_mainstack = PL_curstack;		/* remember in case we switch stacks */
 

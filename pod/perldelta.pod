@@ -5,15 +5,15 @@
 [ this is a template for a new perldelta file.  Any text flagged as XXX needs
 to be processed before release. ]
 
-perldelta - what is new for perl v5.27.2
+perldelta - what is new for perl v5.27.4
 
 =head1 DESCRIPTION
 
-This document describes differences between the 5.27.1 release and the 5.27.2
+This document describes differences between the 5.27.3 release and the 5.27.4
 release.
 
-If you are upgrading from an earlier release such as 5.27.0, first read
-L<perl5271delta>, which describes differences between 5.27.0 and 5.27.1.
+If you are upgrading from an earlier release such as 5.27.2, first read
+L<perl5273delta>, which describes differences between 5.27.2 and 5.27.3.
 
 =head1 Notice
 
@@ -26,11 +26,6 @@ enhancements.  Particularly prominent performance optimisations could go
 here, but most should go in the L</Performance Enhancements> section.
 
 [ List each enhancement as a =head2 entry ]
-
-=head2 Unicode 10.0 is supported
-
-A list of changes is at
-L<http://www.unicode.org/versions/Unicode10.0.0>.
 
 =head1 Security
 
@@ -88,7 +83,7 @@ as an updated module in the L</Modules and Pragmata> section.
 XXX Changes which enhance performance without changing behaviour go here.
 There may well be none in a stable release.
 
-[ List each enhancement as a =item entry ]
+[ List each enhancement as an =item entry ]
 
 =over 4
 
@@ -106,7 +101,13 @@ following sections using F<Porting/corelist-perldelta.pl>.  A paragraph summary
 for important changes should then be added by hand.  In an ideal world,
 dual-life modules would have a F<Changes> file that could be cribbed.
 
-[ Within each section, list entries as a =item entry ]
+The list of new and updated modules is modified automatically as part of
+preparing a Perl release, so the only reason to manually add entries here is if
+you're summarising the important changes in the module update. (Also, if the
+manually-added details don't match the automatically-generated ones, the
+release manager will have to investigate the situation carefully.)
+
+[ Within each section, list entries as an =item entry ]
 
 =head2 New Modules and Pragmata
 
@@ -245,7 +246,7 @@ go here.  Any other changes to the Perl build process should be listed here.
 However, any platform-specific changes should be listed in the
 L</Platform Support> section, instead.
 
-[ List changes as a =item entry ].
+[ List changes as an =item entry ].
 
 =over 4
 
@@ -274,7 +275,7 @@ Tests were added and changed to reflect the other additions and
 changes in this release.  Furthermore, these significant changes were
 made:
 
-[ List each test improvement as a =item entry ]
+[ List each test improvement as an =item entry ]
 
 =over 4
 
@@ -288,7 +289,7 @@ XXX
 
 XXX Any changes to platform support should be listed in the sections below.
 
-[ Within the sections, list each platform as a =item entry with specific
+[ Within the sections, list each platform as an =item entry with specific
 changes as paragraphs below it. ]
 
 =head2 New Platforms
@@ -339,7 +340,7 @@ XXX Changes which affect the interface available to C<XS> code go here.  Other
 significant internal changes for future core maintainers should be noted as
 well.
 
-[ List each change as a =item entry ]
+[ List each change as an =item entry ]
 
 =over 4
 
@@ -354,7 +355,7 @@ XXX
 XXX Important bug fixes in the core language are summarized here.  Bug fixes in
 files in F<ext/> and F<lib/> are best summarized in L</Modules and Pragmata>.
 
-[ List each fix as a =item entry ]
+[ List each fix as an =item entry ]
 
 =over 4
 
@@ -370,7 +371,7 @@ XXX Descriptions of platform agnostic bugs we know we can't fix go here.  Any
 tests that had to be C<TODO>ed for the release would be noted here.  Unfixed
 platform specific bugs also go here.
 
-[ List each fix as a =item entry ]
+[ List each fix as an =item entry ]
 
 =over 4
 
