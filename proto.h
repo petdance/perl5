@@ -3385,6 +3385,7 @@ PERL_CALLCONV void	Perl_sv_setuv(pTHX_ SV *const sv, const UV num);
 PERL_CALLCONV void	Perl_sv_setuv_mg(pTHX_ SV *const sv, const UV u);
 #define PERL_ARGS_ASSERT_SV_SETUV_MG	\
 	assert(sv)
+PERL_CALLCONV SV*	Perl_sv_string_from_errnum(pTHX_ int errnum, SV* tgtsv);
 #ifndef NO_MATHOMS
 PERL_CALLCONV void	Perl_sv_taint(pTHX_ SV* sv);
 #define PERL_ARGS_ASSERT_SV_TAINT	\
@@ -6051,7 +6052,7 @@ PERL_CALLCONV SV*	Perl_sv_dup_inc(pTHX_ const SV *const sstr, CLONE_PARAMS *cons
 	assert(param)
 
 #endif
-#if defined(USE_LOCALE)     && (defined(PERL_IN_LOCALE_C) || defined (PERL_EXT_POSIX))
+#if defined(USE_LOCALE)		    && (   defined(PERL_IN_LOCALE_C)	        || defined(PERL_IN_MG_C)		|| defined (PERL_EXT_POSIX))
 PERL_CALLCONV bool	Perl__is_cur_LC_category_utf8(pTHX_ int category);
 #endif
 #if defined(USE_LOCALE) && defined(PERL_IN_LOCALE_C)

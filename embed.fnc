@@ -1029,6 +1029,7 @@ Apd	|int	|mg_copy	|NN SV *sv|NN SV *nsv|NULLOK const char *key \
 				|I32 klen
 : Defined in mg.c, used only in scope.c
 pd	|void	|mg_localize	|NN SV* sv|NN SV* nsv|bool setmagic
+Apd	|SV*	|sv_string_from_errnum|int errnum|NULLOK SV* tgtsv
 ApdRn	|MAGIC*	|mg_find	|NULLOK const SV* sv|int type
 ApdRn	|MAGIC*	|mg_findext	|NULLOK const SV* sv|int type|NULLOK const MGVTBL *vtbl
 : exported for re.pm
@@ -2737,8 +2738,10 @@ snR	|char *	|setlocale_debug_string	|const int category		    \
 #   endif
 #endif
 
-#if     defined(USE_LOCALE) \
-    && (defined(PERL_IN_LOCALE_C) || defined (PERL_EXT_POSIX))
+#if        defined(USE_LOCALE)		\
+    && (   defined(PERL_IN_LOCALE_C)	\
+        || defined(PERL_IN_MG_C)	\
+	|| defined (PERL_EXT_POSIX))
 ApM	|bool	|_is_cur_LC_category_utf8|int category
 #endif
 

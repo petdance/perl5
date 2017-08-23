@@ -176,6 +176,7 @@ use File::Glob qw(:case);
         'DISTRIBUTION' => 'RURBAN/B-Debug-1.25.tar.gz',
         'FILES'        => q[cpan/B-Debug],
         'EXCLUDED'     => ['t/pod.t'],
+        'DEPRECATED'   => '5.027003',
     },
 
     'base' => {
@@ -791,7 +792,7 @@ use File::Glob qw(:case);
     },
 
     'Module::CoreList' => {
-        'DISTRIBUTION' => 'BINGOS/Module-CoreList-5.20170720.tar.gz',
+        'DISTRIBUTION' => 'BINGOS/Module-CoreList-5.20170821.tar.gz',
         'FILES'        => q[dist/Module-CoreList],
     },
 
