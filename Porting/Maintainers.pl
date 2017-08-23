@@ -85,7 +85,7 @@ use File::Glob qw(:case);
 
 # DEPRECATED contains the *first* version of Perl in which the module
 # was considered deprecated.  It should only be present if the module is
-# actually deprecated.  Such modules should use deprecated.pm to
+# actually deprecated.  Such modules should use deprecate.pm to
 # issue a warning if used.  E.g.:
 #
 #     use if $] >= 5.011, 'deprecate';
@@ -173,9 +173,10 @@ use File::Glob qw(:case);
     },
 
     'B::Debug' => {
-        'DISTRIBUTION' => 'RURBAN/B-Debug-1.24.tar.gz',
+        'DISTRIBUTION' => 'RURBAN/B-Debug-1.25.tar.gz',
         'FILES'        => q[cpan/B-Debug],
         'EXCLUDED'     => ['t/pod.t'],
+        'DEPRECATED'   => '5.027003',
     },
 
     'base' => {
@@ -386,9 +387,8 @@ use File::Glob qw(:case);
     },
 
     'Encode' => {
-        'DISTRIBUTION' => 'DANKOGAI/Encode-2.88.tar.gz',
+        'DISTRIBUTION' => 'DANKOGAI/Encode-2.92.tar.gz',
         'FILES'        => q[cpan/Encode],
-        'CUSTOMIZED'   => [ qw(Unicode/Unicode.pm) ],
     },
 
     'encoding::warnings' => {
@@ -433,7 +433,7 @@ use File::Glob qw(:case);
 
     'ExtUtils::Constant' => {
 
-        'DISTRIBUTION' => 'NWCLARK/ExtUtils-Constant-0.23.tar.gz',
+        'DISTRIBUTION' => 'NWCLARK/ExtUtils-Constant-0.24.tar.gz',
         'FILES'    => q[cpan/ExtUtils-Constant],
         'EXCLUDED' => [
             qw( lib/ExtUtils/Constant/Aaargh56Hash.pm
@@ -441,8 +441,6 @@ use File::Glob qw(:case);
                 examples/perl_regcomp_posix_keyword.pl
                 ),
         ],
-        # cc37ebcee3 to fix VMS failure
-        'CUSTOMIZED'   => [ qw(t/Constant.t) ],
     },
 
     'ExtUtils::Install' => {
@@ -484,7 +482,7 @@ use File::Glob qw(:case);
     },
 
     'ExtUtils::ParseXS' => {
-        'DISTRIBUTION' => 'SMUELLER/ExtUtils-ParseXS-3.30.tar.gz',
+        'DISTRIBUTION' => 'SMUELLER/ExtUtils-ParseXS-3.35.tar.gz',
         'FILES'        => q[dist/ExtUtils-ParseXS],
     },
 
@@ -515,7 +513,7 @@ use File::Glob qw(:case);
     },
 
     'Filter::Simple' => {
-        'DISTRIBUTION' => 'SMUELLER/Filter-Simple-0.91.tar.gz',
+        'DISTRIBUTION' => 'SMUELLER/Filter-Simple-0.94.tar.gz',
         'FILES'        => q[dist/Filter-Simple],
         'EXCLUDED'     => [
             qr{^demo/}
@@ -750,7 +748,7 @@ use File::Glob qw(:case);
     },
 
     'Math::BigRat' => {
-        'DISTRIBUTION' => 'PJACKLAM/Math-BigRat-0.2611.tar.gz',
+        'DISTRIBUTION' => 'PJACKLAM/Math-BigRat-0.2613.tar.gz',
         'FILES'        => q[cpan/Math-BigRat],
         'EXCLUDED'     => [
             qr{^t/author-},
@@ -794,7 +792,7 @@ use File::Glob qw(:case);
     },
 
     'Module::CoreList' => {
-        'DISTRIBUTION' => 'BINGOS/Module-CoreList-5.20170621.tar.gz',
+        'DISTRIBUTION' => 'BINGOS/Module-CoreList-5.20170821.tar.gz',
         'FILES'        => q[dist/Module-CoreList],
     },
 
@@ -959,7 +957,7 @@ use File::Glob qw(:case);
     },
 
     'Scalar-List-Utils' => {
-        'DISTRIBUTION' => 'PEVANS/Scalar-List-Utils-1.47.tar.gz',
+        'DISTRIBUTION' => 'PEVANS/Scalar-List-Utils-1.48.tar.gz',
         'FILES'        => q[cpan/Scalar-List-Utils],
     },
 
@@ -969,7 +967,7 @@ use File::Glob qw(:case);
     },
 
     'SelfLoader' => {
-        'DISTRIBUTION' => 'SMUELLER/SelfLoader-1.20.tar.gz',
+        'DISTRIBUTION' => 'SMUELLER/SelfLoader-1.24.tar.gz',
         'FILES'        => q[dist/SelfLoader],
         'EXCLUDED'     => ['t/00pod.t'],
     },
@@ -1178,7 +1176,7 @@ use File::Glob qw(:case);
     },
 
     'Time::HiRes' => {
-        'DISTRIBUTION' => 'JHI/Time-HiRes-1.9741.tar.gz',
+        'DISTRIBUTION' => 'JHI/Time-HiRes-1.9742.tar.gz',
         'FILES'        => q[dist/Time-HiRes],
     },
 
@@ -1197,7 +1195,7 @@ use File::Glob qw(:case);
     },
 
     'Time::Piece' => {
-        'DISTRIBUTION' => 'ESAYM/Time-Piece-1.31.tar.gz',
+        'DISTRIBUTION' => 'ESAYM/Time-Piece-1.3201.tar.gz',
         'FILES'        => q[cpan/Time-Piece],
     },
 
